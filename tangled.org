@@ -1,0 +1,58 @@
+* Core functionality
+** TODO Move logging back to the modules so the source shows up right
+** TODO Cleanup
+*** Renaming stuff to sensible names
+*** Coding conventions (PEP 8 plz)
+** TODO Executable mods (need testing)
+*** TODO two-way comms via twisted.
+    Specifically, the abilty to have a python plugin run as an executable
+    and give it two pipes - one to talk to the core, one to talk to irc or
+    whatever.  twisted.internet.stdio theoretically should do that
+** Python mods
+   Less suitable for modules with blocking bits because it's not threaded.
+   The irc module is only there because I haven't figured out how to use
+   twisted.internet.stdio,
+*** DONE Stick the interface in a separate module or something
+** DONE Interface via json
+
+* Modules
+** jiggly
+** conversation trees (maybe, but probably just coding that into jiggly)
+** cron
+*** http://twistedmatrix.com/documents/current/core/howto/time.html
+** irc
+*** TODO Hooks
+**** !commands
+**** join
+**** part
+**** arbitrary message matches
+**** privmsg
+**** message specific to channel?
+*** TODO Configuration file
+**** Nickname
+**** Server
+**** Port
+**** nickserv pass
+**** channels
+**** encoding
+*** TODO Pending requests queue
+*** TODO Specific requests (user's host, full whois data, user modes, etc)
+   
+** Logging.  In irc.py or separate?
+** Authentication/Authorization
+*** Nickserv
+**** How much do the common implementations vary?
+**** What's the easiest way to figure out whether someone's ID'd?
+     Apparently Nickserv sends a numerical status code on /msg nickserv
+     status <nick> (thanks frowardd!) but freenode does things differently
+     Oh hey, on Freenode nickserv ACC serves the same purpose
+*** Ops/hops/voice
+*** Hostmask-based
+**** Of course, require a cloak
+
+* Other
+** Proper checking of config values
+** Documentation
+** Decide on a VC system (git?)
+** Decide on a license
+**** Stick it in all files!

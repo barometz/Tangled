@@ -1,0 +1,40 @@
+Tangled is a modular chat bot systemajig, originally intended to be used
+with IRC.
+
+The core system (tangled.py) is presumed flexible enough to be used with
+any kind of modular system in which the various components need to pass
+messages to eachother for whatever reason.  That's pretty modular, I'd
+say.  However, the accompanying modules are written specifically with IRC
+in mind.  As a result all actual functionality, even the IRC bits, is
+defined inside the modules.
+
+Modules are identified by their 'shortname' - a short (say, 3-12 chars,
+preferably ascii) and unique name that is used internally to address
+communications.  These communications occur through stdin/stdout and are
+line-based.  This is possible because the modules are executables and
+called in a beautiful non-blocking fashion by the router.
+
+PROTOCOL 
+
+The core talks to modules using json. The base message is the following:
+
+{
+  "source": shortname of the sender, | One of these two, depending on 
+  "target": shortname of the target, | direction of message
+  "type": descriptor of the message type
+}
+
+It can contain various other key/value pairs depending on the message
+type.  See json.org for more information of the format and what it can
+contain.
+
+FUTURE PLANS
+
+One important future plan is to make it possible to run modules that have
+been written in Python as actual Python modules.  That is, import them
+with __import__(), connect them to a TangledModule descendant that has
+been rigged to work with a to be defined module interface.  The main
+reason to do this is to remove some of the overhead of the Python process
+that'd be started with a traditional call.  The main reason for this being
+on hold for a bit is that it looks like something of a challenge to make
+that setup thread-safe, and without threading it wouldn't be non-blocking.

@@ -1,0 +1,8 @@
+{
+    "server": "irc.network.net",
+    "port": 6667,
+    "nickname": "tangled",
+    "realname": "Thom Angled",
+    "password": "nickserv",
+    "channels": ["#channel"]
+}
