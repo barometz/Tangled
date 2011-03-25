@@ -15,7 +15,7 @@ from twisted.internet import protocol, reactor
 
 DEBUG = 0
 LEVELS = {
-    'all': 5, ## for literal messages between router and modules
+    'all': 5, ## To include stuff like every single irc command.
     'debug': logging.DEBUG,
     'info': logging.INFO,
     'warning': logging.WARNING,
