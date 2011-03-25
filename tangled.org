@@ -1,5 +1,5 @@
 * Core functionality
-** TODO Move logging back to the modules so the source shows up right
+** DONE Move logging back to the modules so the source shows up right
 ** TODO Cleanup
 *** Renaming stuff to sensible names
 *** Coding conventions (PEP 8 plz)
@@ -28,13 +28,13 @@
 **** arbitrary message matches
 **** privmsg
 **** message specific to channel?
-*** TODO Configuration file
+*** DONE Configuration file
 **** Nickname
 **** Server
 **** Port
 **** nickserv pass
 **** channels
-**** encoding
+**** TODO encoding
 *** TODO Pending requests queue
 *** TODO Specific requests (user's host, full whois data, user modes, etc)
    
@@ -51,8 +51,8 @@
 **** Of course, require a cloak
 
 * Other
-** Proper checking of config values
+** DONE Proper checking of config values
 ** Documentation
-** Decide on a VC system (git?)
-** Decide on a license
+** DONE Decide on a VC system (git?)
+** DONE Decide on a license
 **** Stick it in all files!

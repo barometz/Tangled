@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+# Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
+# See LICENSE for details
+
 class TangledInterface():
     """An instance of this is created by Tangled to talk to the module."""
 

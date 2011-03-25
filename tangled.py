@@ -1,6 +1,9 @@
 #!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
+# Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
+# See LICENSE for details
+
 import json
 import logging
 import os
