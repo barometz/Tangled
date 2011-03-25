@@ -1,3 +1,5 @@
+For some reason the TODO and DONE tags don't show up in Github's webviewer.  They're there.
+
 * Core functionality
 ** DONE Move logging back to the modules so the source shows up right
 ** TODO Cleanup
