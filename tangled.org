@@ -36,6 +36,11 @@
 **** channels
 **** TODO encoding
 *** TODO Pending requests queue
+    22:36:02 < gxti> but the gist is: send the query, push a new deferred onto
+    a list for that query type and return it, when the response(s) come back
+    fire the deferred
+    22:36:13 < gxti> maybe add a timeout as a failsafe in case the server
+    ignores you or returns something surprising
 *** TODO Specific requests (user's host, full whois data, user modes, etc)
    
 ** Logging.  In irc.py or separate?
