@@ -15,6 +15,7 @@ from twisted.python import log
 
 # system imports
 import json
+import threading
 
 class Interface(interface.TangledInterface):
     """Interface to the router, customized for this module"""
@@ -36,8 +37,21 @@ class IRCThing(irc.IRCClient):
     versionName = 'Tangled'
     versionNum = '0.0'
 
+    # please don't touch these without using the relevant locks, self.IRCLock
+    # and self.tangledLock
     pendingIRCRequests = {'realname': {},
                           'modules': []}
+    pendingTangledRequests = {'modules': []}
+
+    def connectionMade(self):
+        """De-facto init function"""
+        self.tangledLock = threading.RLock()
+        self.IRCLock = threading.RLock()
+        self.interface = self.factory.interface
+        self.interface.set_client(self)
+        self.loadconfig()
+        irc.IRCClient.connectionMade(self)
+        self.interface.log('info', 'Connected to IRCd')
 
     def sendLine(self, line):
         """Overridden to make sure all strings are encoded properly before
@@ -45,13 +59,6 @@ class IRCThing(irc.IRCClient):
         line = line.encode('utf-8')
         self.interface.log('all', '> {}'.format(line))
         irc.IRCClient.sendLine(self, line)
-
-    def connectionMade(self):
-        self.interface = self.factory.interface
-        self.interface.set_client(self)
-        self.loadconfig()
-        irc.IRCClient.connectionMade(self)
-        self.interface.log('info', 'Connected to IRCd')
 
     def connectionLost(self, reason):
         irc.IRCClient.connectionLost(self, reason)
@@ -100,7 +107,7 @@ class IRCThing(irc.IRCClient):
             handler(nick, channel, msg)
         #else: go through !trigger hooks
 
-    def trigger_modules(self, nick, channel, msg):
+    def trigger_modules(self, nick, channel, msg):        
         self.interface.send({'target': 'core', 
                              'type': 'modules', 
                              'nick': nick,
@@ -111,13 +118,13 @@ class IRCThing(irc.IRCClient):
             self.msg(channel, 
                      '{}: You need to tell me who to whois!'.format(nick))
             return
-        send = lambda result: self.msg(channel, 
-                                         "{}'s name is {}".format(msg[1], 
-                                                                  result))
-        if msg[1] in self.pendingIRCRequests['realname']:
-            self.pendingIRCRequests['realname'][msg[1]].append(send)
-        else:
-            self.pendingIRCRequests['realname'][msg[1]] = [send]
+        send = lambda result: \
+            self.msg(channel, "{}'s name is {}".format(msg[1], result))
+        with self.IRCLock:
+            if msg[1] in self.pendingIRCRequests['realname']:
+                self.pendingIRCRequests['realname'][msg[1]].append(send)
+            else:
+                self.pendingIRCRequests['realname'][msg[1]] = [send]
         self.whois(msg[1])
 
     # irc callbacks
@@ -133,10 +140,11 @@ class IRCThing(irc.IRCClient):
         After the bot's nickname params contains the following in this order:
         nickname, username, host(mask), '*', realname
         """
-        if params[1] in self.pendingIRCRequests['realname']:
-            for callback in self.pendingIRCRequests['realname'][params[1]]:
-                callback(params[-1])
-            del self.pendingIRCRequests['realname'][params[1]]
+        with self.IRCLock:
+            if params[1] in self.pendingIRCRequests['realname']:
+                for callback in self.pendingIRCRequests['realname'][params[1]]:
+                    callback(params[-1])
+                del self.pendingIRCRequests['realname'][params[1]]
 
     def lineReceived(self, line):
         self.interface.log('all', '< {}'.format(line))
@@ -144,7 +152,7 @@ class IRCThing(irc.IRCClient):
     
     ### module comms
     def message(self, msgobj):
-            method = getattr(self, 'msg_{}'.format(msgobj['type']), 
+            method = getattr(self, 'tangled_{}'.format(msgobj['type']), 
                              self.unhandled)
             method(msgobj)
 
@@ -155,7 +163,7 @@ class IRCThing(irc.IRCClient):
                            "Received unhandled message type '{}' from module \
 '{}'".format(msgobj['type'], msgobj['source']))
 
-    def msg_modules(self, msgobj):
+    def tangled_modules(self, msgobj):
         ## need some stuff to keep track of pending requests etc
         modules = ' '.join(msgobj['content'])
         self.msg(msgobj['channel'], '{}: {}'.format(msgobj['nick'], modules))
