@@ -64,7 +64,8 @@ class PyModProcess(protocol.ProcessProtocol):
 
     def sendCoreMessage(self, msgobj):
         """Send a message from core to the attached module """
-        msgobj.update({'source': 'core'})
+        msgobj.update({'source': 'core',
+                       'target': 'irc'})
         self.message(msgobj)
 
     def coreMessage(self, msgobj):
@@ -95,8 +96,11 @@ class PyModProcess(protocol.ProcessProtocol):
         No other keys expected.
         """
         modules_list = self.router.modules.keys()
-        self.sendCoreMessage({ 'type': 'modules', 
-                               'content': modules_list })
+        # update to preserve other keys the module might have attached for
+        # reference purposes
+        msgobj.update({'type': 'modules',
+                       'content': modules_list})
+        self.sendCoreMessage(msgobj)
 
 
 class ExecutableProcess(PyModProcess):

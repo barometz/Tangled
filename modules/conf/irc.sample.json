@@ -4,5 +4,6 @@
     "nickname": "tangled",
     "realname": "Thom Angled",
     "password": "nickserv",
-    "channels": ["#channel"]
+    "channels": ["#channel"],
+    "triggerChar": "!"
 }
