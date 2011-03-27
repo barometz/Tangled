@@ -56,7 +56,7 @@ class IRCThing(irc.IRCClient):
     def sendLine(self, line):
         """Overridden to make sure all strings are encoded properly before
         they're sent out"""
-        line = line.encode('utf-8')
+        line = line.encode(self.encoding)
         self.interface.log('all', '> {}'.format(line))
         irc.IRCClient.sendLine(self, line)
 
@@ -65,11 +65,14 @@ class IRCThing(irc.IRCClient):
 
     def loadconfig(self):
         self.config = self.factory.config
+        # I could do this in a loop with setattr but I feel this is safer in
+        # case of errors.
         self.nickname = self.config['nickname']
         self.realname = self.config['realname']
         self.lineRate = self.config['lineRate']
         self.password = self.config['password']
         self.triggerChar = self.config['triggerChar']
+        self.encoding = self.config['encoding']
 
     # callbacks for events
 
@@ -183,7 +186,8 @@ class TangledFactory(protocol.ClientFactory):
         'nickname': 'tangled',
         'realname': 'Thomas A.N. Gled',
         'lineRate': 1,
-        'triggerChar': '!'
+        'triggerChar': '!',
+        'encoding': 'utf-8'
         }
 
     def __init__(self, interface):

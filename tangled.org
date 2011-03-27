@@ -10,10 +10,7 @@ For some reason the TODO and DONE tags don't show up in Github's webviewer.  The
     Specifically, the abilty to have a python plugin run as an executable
     and give it two pipes - one to talk to the core, one to talk to irc or
     whatever.  twisted.internet.stdio theoretically should do that
-** Python mods
-   Less suitable for modules with blocking bits because it's not threaded.
-   The irc module is only there because I haven't figured out how to use
-   twisted.internet.stdio,
+** DONE Python mods
 *** DONE Stick the interface in a separate module or something
 ** DONE Interface via json
 
@@ -36,10 +33,9 @@ For some reason the TODO and DONE tags don't show up in Github's webviewer.  The
 **** Port
 **** nickserv pass
 **** channels
-**** TODO encoding
-*** TODO Pending requests queue
-*** TODO Specific requests (user's host, full whois data, user modes, etc)
-   
+**** DONE encoding
+*** DONE Pending requests queue
+*** TODO Specific requests (user's host, full whois data, user modes, etc)   
 ** Logging.  In irc.py or separate?
 ** Authentication/Authorization
 *** Nickserv
@@ -51,10 +47,10 @@ For some reason the TODO and DONE tags don't show up in Github's webviewer.  The
 *** Ops/hops/voice
 *** Hostmask-based
 **** Of course, require a cloak
-
+     
 * Other
 ** DONE Proper checking of config values
-** Documentation
+** TODO Documentation
 ** DONE Decide on a VC system (git?)
 ** DONE Decide on a license
 **** Stick it in all files!
