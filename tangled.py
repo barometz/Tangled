@@ -23,12 +23,9 @@ LEVELS = {
     'critical': logging.CRITICAL
     }
 
-class PyModProcess():
-    """Router-side interface for importable python modules (pymods).
+class TangledModule():
+    """Abstract class defining the interface for Tangled modules.
 
-    The main function that is exposed to the router is message(), taking
-    one argument: a dict that the module at the other end can do something
-    useful with.
     """
     def __init__(self, shortname, router):
         self.shortname = shortname
@@ -39,12 +36,6 @@ class PyModProcess():
         """Create a module-specific logger object"""
         self.logger = logging.getLogger(self.shortname)    
 
-    def spawn(self):
-        pymod = __import__('modules.{}'.format(self.shortname), globals())
-        # because __import__ returns 'modules' here:
-        pymod = getattr(pymod, self.shortname)
-        self.interface = pymod.Interface(self)
-
     def processObject(self, msgobj):
         if 'type' in msgobj and msgobj['type'] != 'log':
             self.logger.debug('Received: {}'.format(json.dumps(msgobj)))
@@ -54,19 +45,13 @@ class PyModProcess():
         elif msgobj['target'] == 'core': 
             self.coreMessage(msgobj)
 
-    def message(self, msgobj):
-        """Another module has sent this one a message.  Pass it on!"""
-        self.interface.message(msgobj)
-        # conditional to save a tiny bit on json overhead
-        self.logger.debug('Sent: {}'.format(json.dumps(msgobj)))
-
-    ### core <-> module communication
-
     def sendCoreMessage(self, msgobj):
         """Send a message from core to the attached module """
         msgobj.update({'source': 'core',
-                       'target': 'irc'})
+                       'target': self.shortname})
         self.message(msgobj)
+
+    ### core <-> module communication
 
     def coreMessage(self, msgobj):
         """Called when a module sends a message to 'core'"""
@@ -102,8 +87,38 @@ class PyModProcess():
                        'content': modules_list})
         self.sendCoreMessage(msgobj)
 
+    ### Some functions that the subclass /really/ needs to implement.
 
-class ExecutableProcess(PyModProcess, protocol.ProcessProtocol):
+    def spawn(self):
+        """Run the actual module."""
+        raise NotImplementedError
+
+    def message(self, msgobj):
+        """Send a message to the module"""
+        raise NotImplementedError
+
+
+class PyModProcess(TangledModule):
+    """Router-side interface for importable python modules (pymods).
+
+    The main function that is exposed to the router is message(), taking
+    one argument: a dict that the module at the other end can do something
+    useful with.
+    """
+    def spawn(self):
+        pymod = __import__('modules.{}'.format(self.shortname), globals())
+        # because __import__ returns 'modules' here:
+        pymod = getattr(pymod, self.shortname)
+        self.interface = pymod.Interface(self)
+
+    def message(self, msgobj):
+        """Another module has sent this one a message.  Pass it on!"""
+        self.interface.message(msgobj)
+        # conditional to save a tiny bit on json overhead
+        self.logger.debug('Sent: {}'.format(json.dumps(msgobj)))
+
+
+class ExecutableProcess(TangledModule, protocol.ProcessProtocol):
     """Router-side interface for executable (stdio-based) modules"""
     _buffer=''
     delimiter = '\r\n'
@@ -114,6 +129,11 @@ class ExecutableProcess(PyModProcess, protocol.ProcessProtocol):
         reactor.spawnProcess(self, 'modules/'+self.shortname, [self.shortname], 
                              env=os.environ, usePTY=True)
     
+    def message(self, msgobj):
+        msgstring = json.dumps(msgobj)
+        self._sendLine(msgstring)
+        self.logger.debug("Sent: {}".format(msgstring))
+
     def _sendLine(self, line):
         """Sends a line of text to the module.
 
@@ -124,11 +144,6 @@ class ExecutableProcess(PyModProcess, protocol.ProcessProtocol):
         """
         self.logger.log(5, 'Sent: {}'.format(line))
         return self.transport.write(line+self.delimiter)
-
-    def message(self, msgobj):
-        msgstring = json.dumps(msgobj)
-        self._sendLine(msgstring)
-        self.logger.debug("Sent: {}".format(msgstring))
 
     ### CALLBACKS AND RELATED STUFF
 
