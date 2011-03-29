@@ -26,7 +26,6 @@ class TangledInterface():
         
         level is an integer between 0 and 50 inclusive.
         """
-
         self.send({
                 'target': 'core',
                 'type': 'log',

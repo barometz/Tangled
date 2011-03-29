@@ -5,16 +5,16 @@ For some reason the TODO and DONE tags don't show up in Github's webviewer.  The
 ** TODO Cleanup
 *** Renaming stuff to sensible names
 *** Coding conventions (PEP 8 plz)
-** TODO Executable mods (need testing)
+** TODO Executable nodes (need testing)
 *** TODO two-way comms via twisted.
-    Specifically, the abilty to have a python plugin run as an executable
+    Specifically, the abilty to have a python node run as an executable
     and give it two pipes - one to talk to the core, one to talk to irc or
     whatever.  twisted.internet.stdio theoretically should do that
-** DONE Python mods
+** DONE Python nodes
 *** DONE Stick the interface in a separate module or something
 ** DONE Interface via json
 
-* Modules
+* Nodes
 ** jiggly
 ** conversation trees (maybe, but probably just coding that into jiggly)
 ** cron
