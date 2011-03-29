@@ -23,7 +23,7 @@ LEVELS = {
     'critical': logging.CRITICAL
     }
 
-class PyModProcess(protocol.ProcessProtocol):
+class PyModProcess():
     """Router-side interface for importable python modules (pymods).
 
     The main function that is exposed to the router is message(), taking
@@ -103,7 +103,7 @@ class PyModProcess(protocol.ProcessProtocol):
         self.sendCoreMessage(msgobj)
 
 
-class ExecutableProcess(PyModProcess):
+class ExecutableProcess(PyModProcess, protocol.ProcessProtocol):
     """Router-side interface for executable (stdio-based) modules"""
     _buffer=''
     delimiter = '\r\n'
