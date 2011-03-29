@@ -19,7 +19,6 @@ from nodes import nodeinterface
 
 class Interface(nodeinterface.TangledInterface):
     """Interface to the router, customized for this node"""
-
     def __init__(self, router):
         nodeinterface.TangledInterface.__init__(self, router)
         # create factory protocol and application
@@ -53,15 +52,19 @@ class IRCThing(irc.IRCClient):
         irc.IRCClient.connectionMade(self)
         self.interface.log(logging.INFO, 'Connected to IRCd')
 
+    def connectionLost(self, reason):
+        irc.IRCClient.connectionLost(self, reason)
+
+    def lineReceived(self, line):
+        self.interface.log(5, '< {}'.format(line))
+        irc.IRCClient.lineReceived(self, line)
+
     def sendLine(self, line):
         """Overridden to make sure all strings are encoded properly before
         they're sent out"""
         line = line.encode(self.encoding)
         self.interface.log(5, '> {}'.format(line))
         irc.IRCClient.sendLine(self, line)
-
-    def connectionLost(self, reason):
-        irc.IRCClient.connectionLost(self, reason)
 
     def loadconfig(self):
         self.config = self.factory.config
@@ -74,7 +77,7 @@ class IRCThing(irc.IRCClient):
         self.triggerChar = self.config['triggerChar']
         self.encoding = self.config['encoding']
 
-    # callbacks for events
+    ## Callbacks from irc.IRCClient
 
     def signedOn(self):
         """Called when bot has succesfully signed on to server."""
@@ -93,15 +96,31 @@ class IRCThing(irc.IRCClient):
         if msg.startswith(self.triggerChar) and len(msg) > 1:
             self.triggerMessage(nick, channel, msg)
             
-        # Otherwise check to see if it is a message directed at me
-        if msg.startswith(self.nickname + ":"):
-            msg = '{}: I am a log bot'.format(nick)
-            self.msg(channel, msg)
-
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
         user = user.split('!', 1)[0]
         
+    ## "Raw" IRCClient callbacks 
+
+    def irc_NICK(self, prefix, params):
+        """Called when an IRC user changes their nickname."""
+        old_nick = prefix.split('!')[0]
+        new_nick = params[0]
+
+    def irc_RPL_WHOISUSER(self, prefix, params):
+        """Part of a WHOIS reply.
+
+        After the bot's nickname params contains the following in this order:
+        nickname, username, host(mask), '*', realname
+        """
+        with self.IRCLock:
+            if params[1] in self.pendingIRCRequests['realname']:
+                for callback in self.pendingIRCRequests['realname'][params[1]]:
+                    callback(params[-1])
+                del self.pendingIRCRequests['realname'][params[1]]
+    
+    ## Own callbacks
+
     def triggerMessage(self, nick, channel, msg):
         ## split msg into [command, arguments]
         msg = msg[1:].split(None, 1)
@@ -130,34 +149,13 @@ class IRCThing(irc.IRCClient):
                 self.pendingIRCRequests['realname'][msg[1]] = [send]
         self.whois(msg[1])
 
-    # irc callbacks
+    ## Handling messages from the core
 
-    def irc_NICK(self, prefix, params):
-        """Called when an IRC user changes their nickname."""
-        old_nick = prefix.split('!')[0]
-        new_nick = params[0]
-
-    def irc_RPL_WHOISUSER(self, prefix, params):
-        """Part of a WHOIS reply.
-
-        After the bot's nickname params contains the following in this order:
-        nickname, username, host(mask), '*', realname
-        """
-        with self.IRCLock:
-            if params[1] in self.pendingIRCRequests['realname']:
-                for callback in self.pendingIRCRequests['realname'][params[1]]:
-                    callback(params[-1])
-                del self.pendingIRCRequests['realname'][params[1]]
-
-    def lineReceived(self, line):
-        self.interface.log(5, '< {}'.format(line))
-        irc.IRCClient.lineReceived(self, line)
-    
-    ### node comms
     def message(self, msgobj):
-            method = getattr(self, 'tangled_{}'.format(msgobj['type']), 
-                             self.unhandled)
-            method(msgobj)
+        """Received a message from the core."""
+        method = getattr(self, 'tangled_{}'.format(msgobj['type']), 
+                         self.unhandled)
+        method(msgobj)
 
     def unhandled(self, msgobj):
         """Called when a message is received with a type I don't have a handler
@@ -167,7 +165,6 @@ class IRCThing(irc.IRCClient):
 '{}'".format(msgobj['type'], msgobj['source']))
 
     def tangled_nodes(self, msgobj):
-        ## need some stuff to keep track of pending requests etc
         nodes = ' '.join(msgobj['content'])
         self.msg(msgobj['channel'], '{}: {}'.format(msgobj['nick'], nodes))
 
@@ -206,7 +203,6 @@ class TangledFactory(protocol.ClientFactory):
     def clientConnectionFailed(self, connector, reason):
         self.interface.log(logging.CRITICAL, 'Connection failed: {}'.format(reason))
         reactor.stop()
-
 
 if __name__ == '__main__':
     print 'This node is intended for use with Tangled and does not do'

@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
@@ -11,17 +10,11 @@ from twisted.internet import protocol, reactor
 
 
 class TangledNode():
-    """Abstract class defining the interface for Tangled nodes.
-
-    """
+    """Abstract class defining the interface for Tangled nodes."""
     def __init__(self, shortname, router):
         self.shortname = shortname
         self.router = router
         self.startlogging()
-
-    def startlogging(self):
-        """Create a node-specific logger object"""
-        self.logger = logging.getLogger(self.shortname)    
 
     def processObject(self, msgobj):
         if 'type' in msgobj and msgobj['type'] != 'log':
@@ -32,18 +25,22 @@ class TangledNode():
         elif msgobj['target'] == 'core': 
             self.coreMessage(msgobj)
 
+    def startlogging(self):
+        """Create a node-specific logger object"""
+        self.logger = logging.getLogger(self.shortname)    
+
     def sendCoreMessage(self, msgobj):
         """Send a message from core to the attached node """
         msgobj.update({'source': 'core',
                        'target': self.shortname})
         self.message(msgobj)
 
-    ### core <-> node communication
-
     def coreMessage(self, msgobj):
         """Called when a node sends a message to 'core'"""
         method = getattr(self, 'msg_{}'.format(msgobj['type']))
         method(msgobj)
+
+    ## Callbacks for messages from the node
 
     def msg_log(self, msgobj):
         """Log a message. 
@@ -92,10 +89,10 @@ class PythonNode(TangledNode):
     useful with.
     """
     def spawn(self):
-        pymod = __import__('nodes.{}'.format(self.shortname), globals())
+        pynode = __import__('nodes.{}'.format(self.shortname), globals())
         # because __import__ returns 'nodes' here:
-        pymod = getattr(pymod, self.shortname)
-        self.interface = pymod.Interface(self)
+        pynode = getattr(pynode, self.shortname)
+        self.interface = pynode.Interface(self)
 
     def message(self, msgobj):
         """Another node has sent this one a message.  Pass it on!"""
@@ -109,7 +106,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
     _buffer=''
     delimiter = '\r\n'
     MAX_LENGTH = 16384
-    paused = False
     
     def spawn(self):
         reactor.spawnProcess(self, 'nodes/'+self.shortname, [self.shortname], 
@@ -119,6 +115,8 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         msgstring = json.dumps(msgobj)
         self._sendLine(msgstring)
         self.logger.debug("Sent: {}".format(msgstring))
+
+    ## ProcessProtocol overrides
 
     def _sendLine(self, line):
         """Sends a line of text to the node.
@@ -131,7 +129,7 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         self.logger.log(5, 'Sent: {}'.format(line))
         return self.transport.write(line+self.delimiter)
 
-    ### CALLBACKS AND RELATED STUFF
+    ## ProcessProtocol callbacks
 
     def connectionMade(self):
         self.logger.debug('Stdio pipe connected')
@@ -146,7 +144,7 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
 
         """
         self._buffer = self._buffer+data
-        while not self.paused:
+        while True
             try:
                 # Split lines.  If there's no linebreak yet,
                 # ValueError is thrown, _buffer remains as it was
@@ -168,11 +166,10 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
                 if why or self.transport and self.transport.disconnecting:
                     return why
         else:
-            if not self.paused:
-                data=self.__buffer
-                self.__buffer=''
-                if data:
-                    return self.rawDataReceived(data)
+            data=self.__buffer
+            self.__buffer=''
+            if data:
+                return self.rawDataReceived(data)
 
     def lineReceived(self, line):
         """Process the received lines. (from the node)
