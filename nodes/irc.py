@@ -4,24 +4,24 @@
 # Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
 # See LICENSE for details
 
-# the interface to talk to the core
-from modules import interface
-
-# twisted imports
-from twisted.words.protocols import irc
-from twisted.protocols import basic
-from twisted.internet import reactor, protocol, stdio
-from twisted.python import log
-
 # system imports
 import json
 import threading
+import logging
 
-class Interface(interface.TangledInterface):
-    """Interface to the router, customized for this module"""
+# twisted imports
+from twisted.words.protocols import irc
+from twisted.internet import reactor, protocol
+
+# the interface to talk to the core
+from nodes import nodeinterface
+
+
+class Interface(nodeinterface.TangledInterface):
+    """Interface to the router, customized for this node"""
 
     def __init__(self, router):
-        interface.TangledInterface.__init__(self, router)
+        nodeinterface.TangledInterface.__init__(self, router)
         # create factory protocol and application
         f = TangledFactory(self)
 
@@ -40,8 +40,8 @@ class IRCThing(irc.IRCClient):
     # please don't touch these without using the relevant locks, self.IRCLock
     # and self.tangledLock
     pendingIRCRequests = {'realname': {},
-                          'modules': []}
-    pendingTangledRequests = {'modules': []}
+                          'nodes': []}
+    pendingTangledRequests = {'nodes': []}
 
     def connectionMade(self):
         """De-facto init function"""
@@ -51,13 +51,13 @@ class IRCThing(irc.IRCClient):
         self.interface.set_client(self)
         self.loadconfig()
         irc.IRCClient.connectionMade(self)
-        self.interface.log('info', 'Connected to IRCd')
+        self.interface.log(logging.INFO, 'Connected to IRCd')
 
     def sendLine(self, line):
         """Overridden to make sure all strings are encoded properly before
         they're sent out"""
         line = line.encode(self.encoding)
-        self.interface.log('all', '> {}'.format(line))
+        self.interface.log(5, '> {}'.format(line))
         irc.IRCClient.sendLine(self, line)
 
     def connectionLost(self, reason):
@@ -110,9 +110,9 @@ class IRCThing(irc.IRCClient):
             handler(nick, channel, msg)
         #else: go through !trigger hooks
 
-    def trigger_modules(self, nick, channel, msg):        
+    def trigger_nodes(self, nick, channel, msg):        
         self.interface.send({'target': 'core', 
-                             'type': 'modules', 
+                             'type': 'nodes', 
                              'nick': nick,
                              'channel': channel})
 
@@ -150,10 +150,10 @@ class IRCThing(irc.IRCClient):
                 del self.pendingIRCRequests['realname'][params[1]]
 
     def lineReceived(self, line):
-        self.interface.log('all', '< {}'.format(line))
+        self.interface.log(5, '< {}'.format(line))
         irc.IRCClient.lineReceived(self, line)
     
-    ### module comms
+    ### node comms
     def message(self, msgobj):
             method = getattr(self, 'tangled_{}'.format(msgobj['type']), 
                              self.unhandled)
@@ -162,25 +162,24 @@ class IRCThing(irc.IRCClient):
     def unhandled(self, msgobj):
         """Called when a message is received with a type I don't have a handler
         for."""
-        self.interface.log('warning', 
-                           "Received unhandled message type '{}' from module \
+        self.interface.log(logging.WARNING, 
+                           "Received unhandled message type '{}' from node \
 '{}'".format(msgobj['type'], msgobj['source']))
 
-    def tangled_modules(self, msgobj):
+    def tangled_nodes(self, msgobj):
         ## need some stuff to keep track of pending requests etc
-        modules = ' '.join(msgobj['content'])
-        self.msg(msgobj['channel'], '{}: {}'.format(msgobj['nick'], modules))
+        nodes = ' '.join(msgobj['content'])
+        self.msg(msgobj['channel'], '{}: {}'.format(msgobj['nick'], nodes))
 
 
 class TangledFactory(protocol.ClientFactory):
-    """A factory for Tangled.  The irc module, anyway.
+    """A factory for Tangled.  The irc node, anyway.
 
     A new protocol instance will be created each time we connect to the server.
     """
 
     # the class of the protocol to build when new connection is made
     protocol = IRCThing
-
     
     config = {
         'nickname': 'tangled',
@@ -195,7 +194,9 @@ class TangledFactory(protocol.ClientFactory):
         self.loadconfig()
 
     def loadconfig(self):
-        confp = open('modules/conf/irc.json', 'r')
+        # strictly speaking this path shouldn't be hardcoded.  Really bad form
+        # for a python module.
+        confp = open('nodes/conf/irc.json', 'r')
         self.config.update(json.load(confp))
 
     def clientConnectionLost(self, connector, reason):
@@ -203,10 +204,10 @@ class TangledFactory(protocol.ClientFactory):
         connector.connect()
 
     def clientConnectionFailed(self, connector, reason):
-        self.interface.log('critical', 'Connection failed: {}'.format(reason))
+        self.interface.log(logging.CRITICAL, 'Connection failed: {}'.format(reason))
         reactor.stop()
 
 
 if __name__ == '__main__':
-    print 'This module is intended for use with Tangled and does not do'
+    print 'This node is intended for use with Tangled and does not do'
     print 'anything useful without it at the moment.'

@@ -1,6 +1,6 @@
 {
-    "modules": [],
-    "pymods": ["irc"],
+    "nodes": [],
+    "pynodes": ["irc"],
     "loglevel": "info",
     "logfilelevel": "info",
     "logformat": "%(asctime)s %(levelname)-8s %(name)s: %(message)s",

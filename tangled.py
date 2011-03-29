@@ -4,209 +4,20 @@
 # Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
 # See LICENSE for details
 
+# library imports
 import json
 import logging
 import os
 
 from optparse import OptionParser
 
+# twisted imports
 from twisted.internet import protocol, reactor
 
+# project-specific imports
+from nodes import coreinterface
 
 DEBUG = 0
-LEVELS = {
-    'all': 5, ## To include stuff like every single irc command.
-    'debug': logging.DEBUG,
-    'info': logging.INFO,
-    'warning': logging.WARNING,
-    'error': logging.ERROR,
-    'critical': logging.CRITICAL
-    }
-
-class TangledModule():
-    """Abstract class defining the interface for Tangled modules.
-
-    """
-    def __init__(self, shortname, router):
-        self.shortname = shortname
-        self.router = router
-        self.startlogging()
-
-    def startlogging(self):
-        """Create a module-specific logger object"""
-        self.logger = logging.getLogger(self.shortname)    
-
-    def processObject(self, msgobj):
-        if 'type' in msgobj and msgobj['type'] != 'log':
-            self.logger.debug('Received: {}'.format(json.dumps(msgobj)))
-        msgobj['source'] = self.shortname
-        if 'target' in msgobj and msgobj['target'] in self.router.modules:
-            self.router.modules[msgobj['target']].message(msgobj)         
-        elif msgobj['target'] == 'core': 
-            self.coreMessage(msgobj)
-
-    def sendCoreMessage(self, msgobj):
-        """Send a message from core to the attached module """
-        msgobj.update({'source': 'core',
-                       'target': self.shortname})
-        self.message(msgobj)
-
-    ### core <-> module communication
-
-    def coreMessage(self, msgobj):
-        """Called when a module sends a message to 'core'"""
-        method = getattr(self, 'msg_{}'.format(msgobj['type']))
-        method(msgobj)
-
-    def msg_log(self, msgobj):
-        """Log a message. 
-
-        Expected keys:
-        level: string out of all,debug,warning,error,critical
-        message: string
-        """
-        if 'message' in msgobj:
-            message = msgobj['message']
-            if 'level' in msgobj and msgobj['level'] in LEVELS:
-                level = msgobj['level']
-            else:
-                level = 'info'
-            self.logger.log(
-                (LEVELS[level] if level in LEVELS else LEVELS['info']), message)
-
-    def msg_modules(self, msgobj):
-        """A module might want to know what modules have been loaded, for
-        instance to enable or disable certain functionality.
-
-        No other keys expected.
-        """
-        modules_list = self.router.modules.keys()
-        # update to preserve other keys the module might have attached for
-        # reference purposes
-        msgobj.update({'type': 'modules',
-                       'content': modules_list})
-        self.sendCoreMessage(msgobj)
-
-    ### Some functions that the subclass /really/ needs to implement.
-
-    def spawn(self):
-        """Run the actual module."""
-        raise NotImplementedError
-
-    def message(self, msgobj):
-        """Send a message to the module"""
-        raise NotImplementedError
-
-
-class PyModProcess(TangledModule):
-    """Router-side interface for importable python modules (pymods).
-
-    The main function that is exposed to the router is message(), taking
-    one argument: a dict that the module at the other end can do something
-    useful with.
-    """
-    def spawn(self):
-        pymod = __import__('modules.{}'.format(self.shortname), globals())
-        # because __import__ returns 'modules' here:
-        pymod = getattr(pymod, self.shortname)
-        self.interface = pymod.Interface(self)
-
-    def message(self, msgobj):
-        """Another module has sent this one a message.  Pass it on!"""
-        self.interface.message(msgobj)
-        # conditional to save a tiny bit on json overhead
-        self.logger.debug('Sent: {}'.format(json.dumps(msgobj)))
-
-
-class ExecutableProcess(TangledModule, protocol.ProcessProtocol):
-    """Router-side interface for executable (stdio-based) modules"""
-    _buffer=''
-    delimiter = '\r\n'
-    MAX_LENGTH = 16384
-    paused = False
-    
-    def spawn(self):
-        reactor.spawnProcess(self, 'modules/'+self.shortname, [self.shortname], 
-                             env=os.environ, usePTY=True)
-    
-    def message(self, msgobj):
-        msgstring = json.dumps(msgobj)
-        self._sendLine(msgstring)
-        self.logger.debug("Sent: {}".format(msgstring))
-
-    def _sendLine(self, line):
-        """Sends a line of text to the module.
-
-        line shouldn't end with a newline, we'll tack that on here.
-        No line rate limiting implemented as I hope we don't have to
-        worry about flooding the system's IO capabilities.
-
-        """
-        self.logger.log(5, 'Sent: {}'.format(line))
-        return self.transport.write(line+self.delimiter)
-
-    ### CALLBACKS AND RELATED STUFF
-
-    def connectionMade(self):
-        self.logger.debug('Stdio pipe connected')
-
-    def outReceived(self, data):
-        """Called for received data.
-        
-        Incoming data is split into lines, anything that's left over
-        is put in _buffer for later use. self.lineReceived is called
-        for every line. Large portions of code nicked from Twisted's
-        LineReceiver.
-
-        """
-        self._buffer = self._buffer+data
-        while not self.paused:
-            try:
-                # Split lines.  If there's no linebreak yet,
-                # ValueError is thrown, _buffer remains as it was
-                # and we'll try again on the next call.
-                line, self._buffer = self._buffer.split(self.delimiter, 1)
-            except ValueError:
-                if len(self._buffer) > self.MAX_LENGTH:
-                    line, self._buffer = self._buffer, ''
-                    return self.lineLengthExceeded(line)
-                break
-            else:
-                linelength = len(line)
-                if linelength > self.MAX_LENGTH:
-                    # this line is getting pretty long let's ditch it
-                    exceeded = line + self._buffer
-                    self._buffer = ''
-                    return self.lineLengthExceeded(exceeded)
-                why = self.lineReceived(line)
-                if why or self.transport and self.transport.disconnecting:
-                    return why
-        else:
-            if not self.paused:
-                data=self.__buffer
-                self.__buffer=''
-                if data:
-                    return self.rawDataReceived(data)
-
-    def lineReceived(self, line):
-        """Process the received lines. (from the module)
-
-        Figures out where a line should go and transmogrifies it to
-        the right format. Then sends it where it should go.
-
-        """
-        msgobj = json.loads(line)
-        self.processObject(msgobj)
-
-    def lineLengthExceeded(self, line): 
-        """Called when the maximum line length is exceeded.
-
-        The LineReceiver implementation just kills the connection,
-        we might want to be a little more subtle about it.
-
-        """
-        self.logger.warning(
-            "Maximum line length ({}) exceeded.".format(MAX_LENGTH))
 
    
 class TangledRouter():
@@ -214,7 +25,7 @@ class TangledRouter():
     
     # dict of (shortname, objectref) for loaded instances of
     # TangledProcess
-    modules = {}
+    nodes = {}
 
     # config defaults
     config = {
@@ -224,12 +35,15 @@ class TangledRouter():
         'datefmt': '%Y-%m-%d %H:%M:%S'
         }
 
-    validconfig = {
-        'loglevel': lambda s: s in LEVELS,
-        'logfilelevel': lambda s: s in LEVELS,
-        'modules': lambda s: isinstance(s, list),
-        'pymods': lambda s: isinstance(s, list)
+    loglevels = {
+        'all': 5,
+        'debug': logging.DEBUG,
+        'info': logging.INFO,
+        'warning': logging.WARNING,
+        'error': logging.ERROR,
+        'critical': logging.CRITICAL
         }
+
 
     def __init__(self, config):
         """config: relative path to config file"""
@@ -239,34 +53,33 @@ class TangledRouter():
             alive = self.checkconfig()
         if alive:
             self.startlogging()
-            self.initmodules()
+            self.initnodes()
             reactor.run()
         
-    def initmodules(self):
-        """Initialize the startup modules.
-        
-        modules: list of executable names.
-
-        """
-        newmodules = self.config["modules"]
-        newpymodules = self.config["pymods"]
-        logging.info('Loading initial modules: {}'.format(newmodules))
-        logging.info('Loading initial python modules: {}'.format(newpymodules))
-        for module in newmodules:
-            if module is not '':
-                self.runmodule(module)
-        for module in newpymodules:
-            self.runmodule(module, True)
-        logging.info('Modules loaded: {}'.format(self.modules))
+    def initnodes(self):
+        """Initialize the startup nodes."""
+        newnodes = self.config["nodes"]
+        newpynodes = self.config["pynodes"]
+        logging.info('Loading initial nodes: {}'.format(newnodes))
+        logging.info('Loading initial python nodes: {}'.format(newpynodes))
+        for node in newnodes:
+            if node is not '':
+                self.runnode(node)
+        for node in newpynodes:
+            self.runnode(node, True)
+        logging.info('Nodes loaded: {}'.format(self.nodes))
     
-    def runmodule(self, module, pymod=False):
-        """Run a module and stick it in self.modules"""
-        if pymod:
-            process = PyModProcess(module, self)
+    def runnode(self, node, pynode=False):
+        """Run a node and stick it in self.nodes
+        
+        node: string, shortname of a node.
+        """
+        if pynode:
+            process = coreinterface.PythonNode(node, self)
         else:
-            process = ExecutableProcess(module, self)
+            process = coreinterface.ExecutableNode(node, self)
         process.spawn()
-        self.modules[module] = process
+        self.nodes[node] = process
 
     def loadconfig(self, filename):
         conf = open(filename, "r")
@@ -275,10 +88,16 @@ class TangledRouter():
     def checkconfig(self):
         """Check the configured options against a list of functions to
         validate them""" 
+        validconfig = {
+            'loglevel': lambda s: s in self.loglevels,
+            'logfilelevel': lambda s: s in self.loglevels,
+            'nodes': lambda s: isinstance(s, list),
+            'pynodes': lambda s: isinstance(s, list)
+            }
         alive = True
         for key in self.config: 
-            if (key in self.validconfig and 
-                not self.validconfig[key](self.config[key])):
+            if (key in validconfig and 
+                not validconfig[key](self.config[key])):
                 logging.critical("Invalid configuration option {}: {}".format(
                         key, self.config[key]))
                 alive = False
@@ -290,13 +109,13 @@ class TangledRouter():
         logfilelevel = self.config['logfilelevel']
         # -v and -vv options only affect stdout logging
         loglevel = (loglevel, 'debug', 'all')[DEBUG]        
-        logging.basicConfig(level=LEVELS[loglevel],
+        logging.basicConfig(level=self.loglevels[loglevel],
                             format=self.config['logformat'],
                             datefmt='%H:%M:%S')
         logging.addLevelName(5, 'ALL')
         # now define a logging handler for stdout
         logfile = logging.FileHandler('tangled.log')
-        logfile.setLevel(LEVELS[logfilelevel])
+        logfile.setLevel(self.loglevels[logfilelevel])
         formatter = logging.Formatter(self.config['logformat'], 
                                       self.config['datefmt'])
         logfile.setFormatter(formatter)

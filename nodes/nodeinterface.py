@@ -4,9 +4,10 @@
 # See LICENSE for details
 
 class TangledInterface():
-    """An instance of this is created by Tangled to talk to the module."""
+    """An instance of this is created by Tangled to talk to the node"""
 
     def __init__(self, router):
+        """You'll want to override this to get your module started"""
         self.router = router
 
     def send(self, msgobj):
@@ -23,8 +24,9 @@ class TangledInterface():
     def log(self, level, message):
         """Log a message via the router's system.
         
-        level is one of all,debug,info,warning,error,critical
+        level is an integer between 0 and 50 inclusive.
         """
+
         self.send({
                 'target': 'core',
                 'type': 'log',
