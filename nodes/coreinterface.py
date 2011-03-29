@@ -144,7 +144,7 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
 
         """
         self._buffer = self._buffer+data
-        while True
+        while True:
             try:
                 # Split lines.  If there's no linebreak yet,
                 # ValueError is thrown, _buffer remains as it was
