@@ -26,6 +26,7 @@ class TangledRouter():
     # dict of (shortname, objectref) for loaded instances of
     # TangledProcess
     nodes = {}
+    loadingnodes = {}
 
     # config defaults
     config = {
@@ -67,7 +68,6 @@ class TangledRouter():
                 self.runnode(node)
         for node in newpynodes:
             self.runnode(node, True)
-        logging.info('Nodes loaded: {}'.format(self.nodes))
     
     def runnode(self, node, pynode=False):
         """Run a node and stick it in self.nodes
@@ -79,7 +79,7 @@ class TangledRouter():
         else:
             process = coreinterface.ExecutableNode(node, self)
         process.spawn()
-        self.nodes[node] = process
+        self.loadingnodes[node] = process
 
     def loadconfig(self, filename):
         conf = open(filename, "r")
@@ -121,6 +121,17 @@ class TangledRouter():
         logfile.setFormatter(formatter)
         logging.getLogger('').addHandler(logfile)
         logging.info('New logging session at level {}'.format(loglevel))
+
+    ## Sorta-callbacks for the nodes
+    
+    def node_loaded(self, node):
+        """A node reports that it has finished loading.
+
+        Add it to self.nodes and go through module_loaded hooks
+        """
+        del self.loadingnodes[node.shortname]
+        self.nodes[node.shortname] = node
+        logging.info('Node "{}" loaded'.format(node.shortname))
 
 
 if __name__ == '__main__':

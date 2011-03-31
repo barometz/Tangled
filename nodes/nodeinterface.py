@@ -33,6 +33,13 @@ class TangledInterface():
                 'message': message
                 })
 
+    def loaded(self):
+        """Node reports that it's finished initial loading.  Tell the core!"""
+        self.send({
+                'target': 'core',
+                'type': 'loaded'
+                })
+
 if __name__ == '__main__':
     print "This module is intended for use with Tangled and does not do"
     print "anything useful without it at the moment."

@@ -50,6 +50,7 @@ class IRCThing(irc.IRCClient):
         self.interface.set_client(self)
         self.loadconfig()
         irc.IRCClient.connectionMade(self)
+        self.interface.loaded()
         self.interface.log(logging.INFO, 'Connected to IRCd')
 
     def connectionLost(self, reason):

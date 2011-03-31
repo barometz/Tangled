@@ -42,6 +42,11 @@ class TangledNode():
 
     ## Callbacks for messages from the node
 
+    def msg_loaded(self, msgobj):
+        """The node reports that it has successfully loaded and is ready for
+        use"""
+        self.router.node_loaded(self)
+
     def msg_log(self, msgobj):
         """Log a message. 
 
