@@ -130,6 +130,11 @@ class IRCThing(irc.IRCClient):
             handler(nick, channel, msg)
         #else: go through !trigger hooks
 
+    def trigger_quit(self, nick, channel, msg):
+        self.interface.send({'target': 'control.py',
+                             'type': 'trigger',
+                             'command': 'quit'})
+
     def trigger_nodes(self, nick, channel, msg):        
         self.interface.send({'target': 'core', 
                              'type': 'nodes', 
@@ -168,6 +173,9 @@ class IRCThing(irc.IRCClient):
     def tangled_nodes(self, msgobj):
         nodes = ' '.join(msgobj['content'])
         self.msg(msgobj['channel'], '{}: {}'.format(msgobj['nick'], nodes))
+
+    def tangled_quit(self, msgobj):
+        reactor.stop()
 
 
 class TangledFactory(protocol.ClientFactory):

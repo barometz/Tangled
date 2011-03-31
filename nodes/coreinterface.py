@@ -6,6 +6,7 @@
 import json
 import logging
 import os
+
 from twisted.internet import protocol, reactor
 
 
@@ -183,8 +184,11 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         the right format. Then sends it where it should go.
 
         """
-        msgobj = json.loads(line)
-        self.processObject(msgobj)
+        try:
+            msgobj = json.loads(line)
+            self.processObject(msgobj)
+        except:
+            pass
 
     def lineLengthExceeded(self, line): 
         """Called when the maximum line length is exceeded.
