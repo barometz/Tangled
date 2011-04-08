@@ -78,6 +78,10 @@ class IRCThing(irc.IRCClient):
         self.triggerChar = self.config['triggerChar']
         self.encoding = self.config['encoding']
 
+    def unload():
+        self.interface.send({'type': 'unloaded',
+                             'target': 'core'}
+
     ## Callbacks from irc.IRCClient
 
     def signedOn(self):
@@ -100,7 +104,7 @@ class IRCThing(irc.IRCClient):
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
         user = user.split('!', 1)[0]
-        
+
     ## "Raw" IRCClient callbacks 
 
     def irc_NICK(self, prefix, params):
@@ -175,7 +179,12 @@ class IRCThing(irc.IRCClient):
         self.msg(msgobj['channel'], '{}: {}'.format(msgobj['nick'], nodes))
 
     def tangled_quit(self, msgobj):
-        reactor.stop()
+        self.quit("Thanks for all the fish!")
+        self.unload()
+#        reactor.stop()
+
+    def tangled_addhook(self, msgobj):
+        
 
 
 class TangledFactory(protocol.ClientFactory):

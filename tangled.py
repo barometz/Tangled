@@ -28,6 +28,9 @@ class TangledRouter():
     nodes = {}
     loadingnodes = {}
 
+    hooks = {'node_loaded': [],
+             'node_unloaded': []}
+
     # config defaults
     config = {
         'loglevel': 'info',
@@ -81,6 +84,20 @@ class TangledRouter():
         process.spawn()
         self.loadingnodes[node] = process
 
+    def addhooks(self, hooks, node):
+        """Add a number of hooks. 
+        
+        hooks: list of hook names
+        node: requesting node object
+        """
+        for hook in hooks:
+            self.hooks[hook].append(node)
+
+    def processhooks(self, hook, msgobj):
+        for node in self.hooks[hook]:
+            msgobj.update({'type': hook})
+            node.sendCoreMessage(msgobj)
+
     def loadconfig(self, filename):
         conf = open(filename, "r")
         self.config.update(json.load(conf))
@@ -127,12 +144,17 @@ class TangledRouter():
     def node_loaded(self, node):
         """A node reports that it has finished loading.
 
-        Add it to self.nodes and go through module_loaded hooks
+        Add it to self.nodes and go through node_loaded hooks
         """
-        del self.loadingnodes[node.shortname]
-        self.nodes[node.shortname] = node
-        logging.info('Node "{}" loaded'.format(node.shortname))
+        self.nodes[node] = self.loadingnodes[node]
+        self.loadingnodes[node]
+        logging.info('Node "{}" loaded'.format(node))
+        self.processhook('node_loaded', {'node': node})
 
+    def node_unloaded(self, node):
+        del self.nodes[node]
+        logging.info('Node "{}" unloaded'.format(node))
+        self.processhook('node_unloaded', {'node': node})
 
 if __name__ == '__main__':
     parser = OptionParser()

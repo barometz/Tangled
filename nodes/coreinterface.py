@@ -37,16 +37,26 @@ class TangledNode():
         self.message(msgobj)
 
     def coreMessage(self, msgobj):
-        """Called when a node sends a message to 'core'"""
+        """Called when the node sends a message to 'core'"""
         method = getattr(self, 'msg_{}'.format(msgobj['type']))
         method(msgobj)
 
     ## Callbacks for messages from the node
+        
+    def msg_addhook(self, msgobj):
+        """Request to add a number of hooks.
+
+        msgobj[hooks]: dict with the hooks, see docs for details.
+        """
+        self.router.addhooks(msgobj[hooks], self)
 
     def msg_loaded(self, msgobj):
         """The node reports that it has successfully loaded and is ready for
         use"""
-        self.router.node_loaded(self)
+        self.router.node_loaded(self.shortname)
+    
+    def msg_unloaded(self, msgobj):
+        self.router.node_unloaded(self.shortname)
 
     def msg_log(self, msgobj):
         """Log a message. 
@@ -82,7 +92,7 @@ class TangledNode():
         """Run the actual node."""
         raise NotImplementedError
 
-    def message(self, msgobj):
+    def message(self, msgobj),
         """Send a message to the node"""
         raise NotImplementedError
 
@@ -103,7 +113,6 @@ class PythonNode(TangledNode):
     def message(self, msgobj):
         """Another node has sent this one a message.  Pass it on!"""
         self.interface.message(msgobj)
-        # conditional to save a tiny bit on json overhead
         self.logger.debug('Sent: {}'.format(json.dumps(msgobj)))
 
 
