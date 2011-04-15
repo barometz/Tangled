@@ -182,11 +182,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
                 why = self.lineReceived(line)
                 if why or self.transport and self.transport.disconnecting:
                     return why
-        else:
-            data=self.__buffer
-            self.__buffer=''
-            if data:
-                return self.rawDataReceived(data)
 
     def lineReceived(self, line):
         """Process the received lines. (from the node)
@@ -195,8 +190,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         the right format. Then sends it where it should go.
 
         """
-#        if self.shortname == "control.py":
-#            print line
         try:
             msgobj = json.loads(line)
             self.processObject(msgobj)
