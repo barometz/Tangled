@@ -5,7 +5,7 @@ but it's here and the outlines are pretty clear.
 
 Tangled makes use of the Twisted "event-driven networking engine", which can
 be found at <http://twistedmatrix.com/>.  It is currently tested with Twisted
-10.2.
+11.0.
 
 See DESC for vague details on how stuff works, tangled.org for future plans
 and tangled.py if you just want to dive in.
