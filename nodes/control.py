@@ -12,7 +12,7 @@ import termios
 fd = sys.stdin.fileno()
 oldattr = termios.tcgetattr(fd)
 newattr = oldattr
-newattr[3] = newattr[3] & ~termios.ECHO
+newattr[3] = newattr[3] & ~termios.ECHO 
 termios.tcsetattr(fd, termios.TCSANOW, newattr)
 
 print(json.dumps({'target': 'core',

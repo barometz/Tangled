@@ -121,7 +121,8 @@ class PythonNode(TangledNode):
 
 class ExecutableNode(TangledNode, protocol.ProcessProtocol):
     """Router-side interface for executable (stdio-based) nodes"""
-    _buffer=''
+    _buffer = ''
+    _errbuffer = ''
     delimiter = '\r\n'
     MAX_LENGTH = 16384
     
@@ -194,7 +195,8 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
             msgobj = json.loads(line)
             self.processObject(msgobj)
         except:
-            pass
+            # It might well be an error from an interpreter or whatever.
+            self.logger.error(line)
 
     def lineLengthExceeded(self, line): 
         """Called when the maximum line length is exceeded.
