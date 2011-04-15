@@ -12,7 +12,7 @@ import os
 from optparse import OptionParser
 
 # twisted imports
-from twisted.internet import protocol, reactor
+from twisted.internet import protocol, reactor, defer
 
 # project-specific imports
 from nodes import coreinterface
@@ -58,7 +58,9 @@ class TangledRouter():
         if alive:
             self.startlogging()
             self.initnodes()
-            reactor.run()
+            reactor.addSystemEventTrigger('before', 'shutdown', self.quit)
+            reactor.addSystemEventTrigger('after', 'shutdown', logging.info, 'Shutdown complete')
+            reactor.run() ## below this line nothing runs
         
     def initnodes(self):
         """Initialize the startup nodes."""
@@ -140,16 +142,22 @@ class TangledRouter():
         logging.info('New logging session at level {}'.format(loglevel))
 
     def quit(self):
+        """Called when reactor.stop is called"""
         nodelist = self.nodes.values()
         for node in nodelist:
             logging.info('Sending quit to ' + node.shortname)
             node.sendCoreMessage({'type': 'quit'})
         reactor.callLater(5, self.forcequit)
+        self.deferquit = defer.Deferred()
+        self.deferquit.addCallback(self.reallyquit)
+        return self.deferquit
 
     def forcequit(self):
         logging.error('Force quit')
-        reactor.stop()
+        self.deferquit.callback(None)
         
+    def reallyquit(self):
+        pass
 
     ## Sorta-callbacks for the nodes
     
@@ -168,7 +176,8 @@ class TangledRouter():
         logging.info('Node "{}" unloaded'.format(node))
         self.processhooks('node_unloaded', {'node': node})
         if len(self.nodes) == 0:
-            reactor.stop()
+            ## This isn't supposed to happen before reactor.stop, so:
+            self.deferquit.callback(None)
 
 if __name__ == '__main__':
     parser = OptionParser()

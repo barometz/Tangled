@@ -44,7 +44,8 @@ class TangledNode():
     ## Callbacks for messages from the node
 
     def msg_quit(self, msgobj):
-        self.router.quit()
+        self.logger.info('Initiating quit sequence')
+        reactor.stop()
         
     def msg_addhook(self, msgobj):
         """Request to add a number of hooks.
