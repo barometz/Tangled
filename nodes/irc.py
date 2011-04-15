@@ -176,8 +176,6 @@ class IRCThing(irc.IRCClient):
 
     def tangled_quit(self, msgobj):
         self.quit("Thanks for all the fish!")
-#        self.unload()
-#        reactor.stop()
 
 
 class TangledFactory(protocol.ClientFactory):

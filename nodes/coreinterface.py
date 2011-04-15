@@ -143,7 +143,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         line shouldn't end with a newline, we'll tack that on here.
         No line rate limiting implemented as I hope we don't have to
         worry about flooding the system's IO capabilities.
-
         """
         return self.transport.write(line+self.delimiter)
 
@@ -159,7 +158,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         is put in _buffer for later use. self.lineReceived is called
         for every line. Large portions of code nicked from Twisted's
         LineReceiver.
-
         """
         self._buffer = self._buffer+data
         while True:
@@ -189,7 +187,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
 
         Figures out where a line should go and transmogrifies it to
         the right format. Then sends it where it should go.
-
         """
         try:
             msgobj = json.loads(line)
@@ -203,7 +200,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
 
         The LineReceiver implementation just kills the connection,
         we might want to be a little more subtle about it.
-
         """
         self.logger.warning(
             "Maximum line length ({}) exceeded.".format(MAX_LENGTH))
