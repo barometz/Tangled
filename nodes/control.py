@@ -27,4 +27,6 @@ while True:
         if msgobj['source'] == 'irc' and msgobj['type'] == 'trigger' and msgobj['command'] == 'quit':
             print(json.dumps({'target': 'core',
                               'type': 'quit'}))
-    
+        elif msgobj['type'] == 'quit':
+            print(json.dumps({'target': 'core',
+                              'type': 'unloaded'}))
