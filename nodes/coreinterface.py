@@ -18,8 +18,6 @@ class TangledNode():
         self.startlogging()
 
     def processObject(self, msgobj):
-        if 'type' in msgobj and msgobj['type'] != 'log':
-            self.logger.debug('Received: {}'.format(json.dumps(msgobj)))
         msgobj['source'] = self.shortname
         if 'target' in msgobj and msgobj['target'] in self.router.nodes:
             self.router.nodes[msgobj['target']].message(msgobj)         
@@ -38,10 +36,15 @@ class TangledNode():
 
     def coreMessage(self, msgobj):
         """Called when the node sends a message to 'core'"""
+        if 'type' in msgobj and msgobj['type'] != 'log':
+            logging.debug('Received: {}'.format(json.dumps(msgobj)))
         method = getattr(self, 'msg_{}'.format(msgobj['type']))
         method(msgobj)
 
     ## Callbacks for messages from the node
+
+    def msg_quit(self, msgobj):
+        self.router.quit()
         
     def msg_addhook(self, msgobj):
         """Request to add a number of hooks.
@@ -92,10 +95,9 @@ class TangledNode():
         """Run the actual node."""
         raise NotImplementedError
 
-    def message(self, msgobj),
+    def message(self, msgobj):
         """Send a message to the node"""
-        raise NotImplementedError
-
+        self.logger.debug("Received: {}".format(json.dumps(msgobj)))
 
 class PythonNode(TangledNode):
     """Router-side interface for importable python nodes.
@@ -113,7 +115,7 @@ class PythonNode(TangledNode):
     def message(self, msgobj):
         """Another node has sent this one a message.  Pass it on!"""
         self.interface.message(msgobj)
-        self.logger.debug('Sent: {}'.format(json.dumps(msgobj)))
+        TangledNode.message(self, msgobj)
 
 
 class ExecutableNode(TangledNode, protocol.ProcessProtocol):
@@ -129,7 +131,7 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
     def message(self, msgobj):
         msgstring = json.dumps(msgobj)
         self._sendLine(msgstring)
-        self.logger.debug("Sent: {}".format(msgstring))
+        TangledNode.message(self, msgobj)
 
     ## ProcessProtocol overrides
 
@@ -141,7 +143,6 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         worry about flooding the system's IO capabilities.
 
         """
-        self.logger.log(5, 'Sent: {}'.format(line))
         return self.transport.write(line+self.delimiter)
 
     ## ProcessProtocol callbacks
@@ -193,6 +194,8 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         the right format. Then sends it where it should go.
 
         """
+#        if self.shortname == "control.py":
+#            print line
         try:
             msgobj = json.loads(line)
             self.processObject(msgobj)

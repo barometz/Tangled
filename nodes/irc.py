@@ -78,10 +78,6 @@ class IRCThing(irc.IRCClient):
         self.triggerChar = self.config['triggerChar']
         self.encoding = self.config['encoding']
 
-    def unload():
-        self.interface.send({'type': 'unloaded',
-                             'target': 'core'}
-
     ## Callbacks from irc.IRCClient
 
     def signedOn(self):
@@ -138,7 +134,7 @@ class IRCThing(irc.IRCClient):
         self.interface.send({'target': 'control.py',
                              'type': 'trigger',
                              'command': 'quit'})
-
+                            
     def trigger_nodes(self, nick, channel, msg):        
         self.interface.send({'target': 'core', 
                              'type': 'nodes', 
@@ -180,11 +176,8 @@ class IRCThing(irc.IRCClient):
 
     def tangled_quit(self, msgobj):
         self.quit("Thanks for all the fish!")
-        self.unload()
+#        self.unload()
 #        reactor.stop()
-
-    def tangled_addhook(self, msgobj):
-        
 
 
 class TangledFactory(protocol.ClientFactory):
@@ -216,7 +209,7 @@ class TangledFactory(protocol.ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         """If we get disconnected, reconnect to server."""
-        connector.connect()
+        self.interface.unload()
 
     def clientConnectionFailed(self, connector, reason):
         self.interface.log(logging.CRITICAL, 'Connection failed: {}'.format(reason))

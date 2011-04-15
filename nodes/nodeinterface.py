@@ -33,6 +33,10 @@ class TangledInterface():
                 'message': message
                 })
 
+    def unload(self):
+        self.send({'type': 'unloaded',
+                             'target': 'core'})
+
     def loaded(self):
         """Node reports that it's finished initial loading.  Tell the core!"""
         self.send({

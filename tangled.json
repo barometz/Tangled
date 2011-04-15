@@ -2,7 +2,7 @@
     "nodes": ["control.py"],
     "pynodes": ["irc"],
     "loglevel": "info",
-    "logfilelevel": "info",
+    "logfilelevel": "all",
     "logformat": "%(asctime)s %(levelname)-8s %(name)s: %(message)s",
     "datefmt": "%Y-%m-%d %H:%M:%S"
 }

@@ -139,6 +139,18 @@ class TangledRouter():
         logging.getLogger('').addHandler(logfile)
         logging.info('New logging session at level {}'.format(loglevel))
 
+    def quit(self):
+        nodelist = self.nodes.values()
+        for node in nodelist:
+            logging.info('Sending quit to ' + node.shortname)
+            node.sendCoreMessage({'type': 'quit'})
+        reactor.callLater(5, self.forcequit)
+
+    def forcequit(self):
+        logging.error('Force quit')
+        reactor.stop()
+        
+
     ## Sorta-callbacks for the nodes
     
     def node_loaded(self, node):
@@ -149,12 +161,14 @@ class TangledRouter():
         self.nodes[node] = self.loadingnodes[node]
         self.loadingnodes[node]
         logging.info('Node "{}" loaded'.format(node))
-        self.processhook('node_loaded', {'node': node})
+        self.processhooks('node_loaded', {'node': node})
 
     def node_unloaded(self, node):
         del self.nodes[node]
         logging.info('Node "{}" unloaded'.format(node))
-        self.processhook('node_unloaded', {'node': node})
+        self.processhooks('node_unloaded', {'node': node})
+        if len(self.nodes) == 0:
+            reactor.stop()
 
 if __name__ == '__main__':
     parser = OptionParser()
