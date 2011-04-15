@@ -149,16 +149,12 @@ class TangledRouter():
             node.sendCoreMessage({'type': 'quit'})
         reactor.callLater(5, self.forcequit)
         self.deferquit = defer.Deferred()
-        self.deferquit.addCallback(self.reallyquit)
         return self.deferquit
 
     def forcequit(self):
         logging.error('Force quit')
         self.deferquit.callback(None)
         
-    def reallyquit(self):
-        pass
-
     ## Sorta-callbacks for the nodes
     
     def node_loaded(self, node):
