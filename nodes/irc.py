@@ -38,14 +38,20 @@ class IRCThing(irc.IRCClient):
 
     # please don't touch these without using the relevant locks, self.IRCLock
     # and self.tangledLock
+    # requests that need a response from IRC to resolve
+    # requests that take an extra argument or otherwise are dicts
     pendingIRCRequests = {'realname': {},
                           'nodes': []}
+    # requests that need a response from the rest of the bot to resolve
     pendingTangledRequests = {'nodes': []}
+
+    triggerCallbacks = {}
 
     def connectionMade(self):
         """De-facto init function"""
         self.tangledLock = threading.RLock()
         self.IRCLock = threading.RLock()
+        self.triggerLock = threading.RLock()
         self.interface = self.factory.interface
         self.interface.set_client(self)
         self.loadconfig()
@@ -128,14 +134,20 @@ class IRCThing(irc.IRCClient):
         handler = getattr(self, 'trigger_{}'.format(msg[0]), None)
         if handler is not None:
             handler(nick, channel, msg)
-        #else: go through !trigger hooks
+        elif msg[0] in self.triggerCallbacks:
+            for node in self.triggerCallbacks[msg[0]]:
+                self.interface.send(
+                    {'target': self.triggerCallbacks[msg[0]],
+                     'type': 'trigger',
+                     'content': msg})
 
     def trigger_quit(self, nick, channel, msg):
         self.interface.send({'target': 'control.py',
                              'type': 'trigger',
-                             'command': 'quit'})
+                             'command': 'quit',
+                             'nick': nick})
                             
-    def trigger_nodes(self, nick, channel, msg):        
+    def trigger_nodes(self, nick, channel, msg):
         self.interface.send({'target': 'core', 
                              'type': 'nodes', 
                              'nick': nick,
@@ -169,6 +181,16 @@ class IRCThing(irc.IRCClient):
         self.interface.log(logging.WARNING, 
                            "Received unhandled message type '{}' from node \
 '{}'".format(msgobj['type'], msgobj['source']))
+
+    def tangled_addcallback(self, msgobj):
+        if 'trigger' in msgobj:
+            with self.triggerLock:
+                if msgobj['trigger'] in self.triggerCallbacks:
+                    self.triggerCallbacks[msgobj['trigger']].append(
+                        msgobj['source'])
+                else:
+                    self.triggerCallbacks[msgobj['trigger']] = \
+                                          [msgobj['source']]
 
     def tangled_nodes(self, msgobj):
         nodes = ' '.join(msgobj['content'])

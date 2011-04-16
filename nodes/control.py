@@ -4,29 +4,36 @@
 # Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
 # See LICENSE for details
 
-import sys
-import json
-import termios
+import execnode
 
+pending = {}
+pendingcounter = 0
 
-fd = sys.stdin.fileno()
-oldattr = termios.tcgetattr(fd)
-newattr = oldattr
-newattr[3] = newattr[3] & ~termios.ECHO 
-termios.tcsetattr(fd, termios.TCSANOW, newattr)
+def handler(msgobj, state):
+    if msgobj['source'] == 'irc' and msgobj['type'] == 'trigger':
+        if msgobj['command'] == 'quit':
+            reqid = state['pendingcounter']
+            state['pendingcounter'] += 1
+            execnode.send({'target': 'auth',
+                           'type': 'haslevel',
+                           'nick': msgobj['nick'],
+                           'level': 30,
+                           'id': reqid})
+            state['pending'][reqid] = {'target': 'core',
+                                         'type': 'quit'}
+    elif msgobj['source'] == 'core':
+        if msgobj['type'] == 'quit':
+            execnode.send({'target': 'core',
+                           'type': 'unloaded'})
+            return False
+    elif msgobj['source'] == 'auth':
+        if msgobj['type'] == 'haslevel':
+            if msgobj['result'] == 'true':
+                execnode.send(state['pending'][msgobj['id']])
+            del state['pending'][msgobj['id']]
+    return True
 
-print(json.dumps({'target': 'core',
-                  'type': 'loaded'}))
-while True:
-    line = sys.stdin.readline()
-    if line.strip() != '':
-        #print(json.dumps({'type': 'log',
-        #                  'level': 'debug',
-        #                  'content': 'received a line:'+line}))
-        msgobj = json.loads(line)
-        if msgobj['source'] == 'irc' and msgobj['type'] == 'trigger' and msgobj['command'] == 'quit':
-            print(json.dumps({'target': 'core',
-                              'type': 'quit'}))
-        elif msgobj['type'] == 'quit':
-            print(json.dumps({'target': 'core',
-                              'type': 'unloaded'}))
+state = {'pending': {},
+         'pendingcounter': 0}
+execnode.startup()
+execnode.loop(handler, state)

@@ -1,5 +1,5 @@
 {
-    "nodes": ["control.py"],
+    "nodes": ["control.py", "auth"],
     "pynodes": ["irc"],
     "loglevel": "info",
     "logfilelevel": "all",
