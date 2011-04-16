@@ -9,31 +9,28 @@ import execnode
 pending = {}
 pendingcounter = 0
 
-def handler(msgobj, state):
-    if msgobj['source'] == 'irc' and msgobj['type'] == 'trigger':
-        if msgobj['command'] == 'quit':
-            reqid = state['pendingcounter']
-            state['pendingcounter'] += 1
-            execnode.send({'target': 'auth.py',
-                           'type': 'haslevel',
-                           'nick': msgobj['nick'],
-                           'level': 30,
-                           'id': reqid})
-            state['pending'][reqid] = {'target': 'core',
-                                         'type': 'quit'}
-    elif msgobj['source'] == 'core':
-        if msgobj['type'] == 'quit':
-            execnode.send({'target': 'core',
-                           'type': 'unloaded'})
-            return False
-    elif msgobj['source'] == 'auth.py':
-        if msgobj['type'] == 'haslevel':
-            if msgobj['result'] == 'true':
-                execnode.send(state['pending'][msgobj['id']])
-            del state['pending'][msgobj['id']]
-    return True
-
-state = {'pending': {},
-         'pendingcounter': 0}
 execnode.startup()
-execnode.loop(handler, state)
+while True:
+    msgobj = execnode.getmsg()
+    if msgobj:
+        if msgobj['source'] == 'irc' and msgobj['type'] == 'trigger':
+            if msgobj['command'] == 'quit':
+                reqid = pendingcounter
+                pendingcounter += 1
+                execnode.send({'target': 'auth.py',
+                               'type': 'haslevel',
+                               'nick': msgobj['nick'],
+                               'level': 30,
+                               'id': reqid})
+                pending[reqid] = {'target': 'core',
+                                  'type': 'quit'}
+        elif msgobj['source'] == 'core':
+            if msgobj['type'] == 'quit':
+                execnode.send({'target': 'core',
+                               'type': 'unloaded'})
+                break
+        elif msgobj['source'] == 'auth.py':
+            if msgobj['type'] == 'haslevel':
+                if msgobj['result'] == 'true':
+                    execnode.send(pending[msgobj['id']])
+                del pending[msgobj['id']]

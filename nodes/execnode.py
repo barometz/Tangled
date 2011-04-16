@@ -27,16 +27,14 @@ def startup():
     send({'target': 'core',
           'type': 'loaded'})
 
-def loop(handler, state={}):
-    while True:
-        line = sys.stdin.readline()
-        if line.strip() == '':
-            continue
-        else:
-            try:
-                msgobj = json.loads(line)
-            except ValueError:
-                log('error', 'Not a json string: {}'.format(line))
-                continue
-        if not handler(msgobj, state):
-            break
+def getmsg():
+    line = sys.stdin.readline()
+    if line.strip() == '':
+        msgobj = False
+    else:
+        try:
+            msgobj = json.loads(line)
+        except ValueError:
+            log('error', 'Not a json string: {}'.format(line))
+            msgobj = False
+    return msgobj
