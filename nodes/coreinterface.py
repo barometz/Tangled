@@ -38,7 +38,7 @@ class TangledNode():
         """Called when the node sends a message to 'core'"""
         if 'type' in msgobj and msgobj['type'] != 'log':
             logging.debug('Received: {}'.format(json.dumps(msgobj)))
-        method = getattr(self, 'msg_{}'.format(msgobj['type']))
+        method = getattr(self, 'msg_{type}'.format(**msgobj))
         method(msgobj)
 
     ## Callbacks for messages from the node

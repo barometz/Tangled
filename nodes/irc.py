@@ -139,7 +139,9 @@ class IRCThing(irc.IRCClient):
                 self.interface.send(
                     {'target': self.triggerCallbacks[msg[0]],
                      'type': 'trigger',
-                     'content': msg})
+                     'content': msg,
+                     'nick': nick,
+                     'channel': channel})
 
     def trigger_quit(self, nick, channel, msg):
         self.interface.send({'target': 'control.py',
@@ -171,7 +173,7 @@ class IRCThing(irc.IRCClient):
 
     def message(self, msgobj):
         """Received a message from the core."""
-        method = getattr(self, 'tangled_{}'.format(msgobj['type']), 
+        method = getattr(self, 'tangled_{type}'.format(**msgobj), 
                          self.unhandled)
         method(msgobj)
 
@@ -179,8 +181,8 @@ class IRCThing(irc.IRCClient):
         """Called when a message is received with a type I don't have a handler
         for."""
         self.interface.log(logging.WARNING, 
-                           "Received unhandled message type '{}' from node \
-'{}'".format(msgobj['type'], msgobj['source']))
+                           "Received unhandled message type '{type}' from node \
+'{source}'".format(**msgobj))
 
     def tangled_addcallback(self, msgobj):
         if 'trigger' in msgobj:
