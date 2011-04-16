@@ -142,7 +142,7 @@ class IRCThing(irc.IRCClient):
                      'content': msg})
 
     def trigger_quit(self, nick, channel, msg):
-        self.interface.send({'target': 'control.py',
+        self.interface.send({'target': 'control',
                              'type': 'trigger',
                              'command': 'quit',
                              'nick': nick})
