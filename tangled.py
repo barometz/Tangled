@@ -152,7 +152,9 @@ class TangledRouter():
         return self.deferquit
 
     def forcequit(self):
-        logging.error('Force quit')
+        nodes = ' '.join(self.nodes.keys())
+        logging.error("Force quit - these nodes didn't close \
+properly: " + nodes)
         self.deferquit.callback(None)
         
     ## Sorta-callbacks for the nodes
