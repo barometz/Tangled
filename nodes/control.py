@@ -10,11 +10,16 @@ pending = {}
 pendingcounter = 0
 
 execnode.startup()
+
+execnode.send({'target': 'core',
+               'type': 'addhooks',
+               'hooks': ['node_loaded']})
+
 while True:
     msgobj = execnode.getmsg()
     if msgobj:
         if msgobj['source'] == 'irc' and msgobj['type'] == 'trigger':
-            if msgobj['command'] == 'quit':
+            if msgobj['content'][0] == 'quit':
                 reqid = pendingcounter
                 pendingcounter += 1
                 execnode.send({'target': 'auth.py',
@@ -29,6 +34,18 @@ while True:
                 execnode.send({'target': 'core',
                                'type': 'unloaded'})
                 break
+            elif msgobj['type'] == 'nodes':
+                if 'irc' in msgobj['content']:
+                    # install !quit hook
+                    execnode.send({'target': 'irc',
+                                   'type': 'addhook',
+                                   'trigger': 'quit'})
+            elif msgobj['type'] == 'node_loaded':
+                if msgobj['node'] == 'irc':
+                    # install !quit hook
+                    execnode.send({'target': 'irc',
+                                   'type': 'addhook',
+                                   'trigger': 'quit'})
         elif msgobj['source'] == 'auth.py':
             if msgobj['type'] == 'haslevel':
                 if msgobj['result'] == 'true':

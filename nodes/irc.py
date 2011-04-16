@@ -45,7 +45,7 @@ class IRCThing(irc.IRCClient):
     # requests that need a response from the rest of the bot to resolve
     pendingTangledRequests = {'nodes': []}
 
-    triggerCallbacks = {}
+    triggerHooks = {}
 
     def connectionMade(self):
         """De-facto init function"""
@@ -134,20 +134,20 @@ class IRCThing(irc.IRCClient):
         handler = getattr(self, 'trigger_{}'.format(msg[0]), None)
         if handler is not None:
             handler(nick, channel, msg)
-        elif msg[0] in self.triggerCallbacks:
-            for node in self.triggerCallbacks[msg[0]]:
+        elif msg[0] in self.triggerHooks:
+            for node in self.triggerHooks[msg[0]]:
                 self.interface.send(
-                    {'target': self.triggerCallbacks[msg[0]],
+                    {'target': node,
                      'type': 'trigger',
                      'content': msg,
                      'nick': nick,
                      'channel': channel})
 
-    def trigger_quit(self, nick, channel, msg):
-        self.interface.send({'target': 'control.py',
-                             'type': 'trigger',
-                             'command': 'quit',
-                             'nick': nick})
+#    def trigger_quit(self, nick, channel, msg):
+#        self.interface.send({'target': 'control.py',
+#                             'type': 'trigger',
+#                             'command': 'quit',
+#                             'nick': nick})
                             
     def trigger_nodes(self, nick, channel, msg):
         self.interface.send({'target': 'core', 
@@ -184,14 +184,14 @@ class IRCThing(irc.IRCClient):
                            "Received unhandled message type '{type}' from node \
 '{source}'".format(**msgobj))
 
-    def tangled_addcallback(self, msgobj):
+    def tangled_addhook(self, msgobj):
         if 'trigger' in msgobj:
             with self.triggerLock:
-                if msgobj['trigger'] in self.triggerCallbacks:
-                    self.triggerCallbacks[msgobj['trigger']].append(
+                if msgobj['trigger'] in self.triggerHooks:
+                    self.triggerHooks[msgobj['trigger']].append(
                         msgobj['source'])
                 else:
-                    self.triggerCallbacks[msgobj['trigger']] = \
+                    self.triggerHooks[msgobj['trigger']] = \
                                           [msgobj['source']]
 
     def tangled_nodes(self, msgobj):
@@ -199,7 +199,8 @@ class IRCThing(irc.IRCClient):
         self.msg(msgobj['channel'], '{}: {}'.format(msgobj['nick'], nodes))
 
     def tangled_quit(self, msgobj):
-        self.quit("Thanks for all the fish!")
+        if msgobj['source'] == 'core':
+            self.quit("Thanks for all the fish!")
 
 
 class TangledFactory(protocol.ClientFactory):

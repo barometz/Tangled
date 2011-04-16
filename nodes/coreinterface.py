@@ -47,12 +47,12 @@ class TangledNode():
         self.logger.info('Initiating quit sequence')
         reactor.stop()
         
-    def msg_addhook(self, msgobj):
+    def msg_addhooks(self, msgobj):
         """Request to add a number of hooks.
 
-        msgobj[hooks]: dict with the hooks, see docs for details.
+        msgobj['hooks']: dict with the hooks, see docs for details.
         """
-        self.router.addhooks(msgobj[hooks], self)
+        self.router.addhooks(msgobj['hooks'], self)
 
     def msg_loaded(self, msgobj):
         """The node reports that it has successfully loaded and is ready for
@@ -190,10 +190,11 @@ class ExecutableNode(TangledNode, protocol.ProcessProtocol):
         """
         try:
             msgobj = json.loads(line)
-            self.processObject(msgobj)
         except:
             # It might well be an error from an interpreter or whatever.
             self.logger.error(line)
+        else:
+            self.processObject(msgobj)
 
     def lineLengthExceeded(self, line): 
         """Called when the maximum line length is exceeded.
