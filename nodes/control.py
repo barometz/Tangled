@@ -14,7 +14,7 @@ def handler(msgobj, state):
         if msgobj['command'] == 'quit':
             reqid = state['pendingcounter']
             state['pendingcounter'] += 1
-            execnode.send({'target': 'auth',
+            execnode.send({'target': 'auth.py',
                            'type': 'haslevel',
                            'nick': msgobj['nick'],
                            'level': 30,
@@ -26,7 +26,7 @@ def handler(msgobj, state):
             execnode.send({'target': 'core',
                            'type': 'unloaded'})
             return False
-    elif msgobj['source'] == 'auth':
+    elif msgobj['source'] == 'auth.py':
         if msgobj['type'] == 'haslevel':
             if msgobj['result'] == 'true':
                 execnode.send(state['pending'][msgobj['id']])
