@@ -4,6 +4,14 @@
 # Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
 # See LICENSE for details
 
+"""irc.py
+
+This is where all the IRC magic happens.  A PythonNode rather than an
+ExecutableNode for reasons that are forgotten (need to figure that out,
+srsly), but it's not much of an issue as the blocking IRC bits are handled by
+Twisted
+"""
+
 # system imports
 import json
 import threading
@@ -36,7 +44,7 @@ class IRCThing(irc.IRCClient):
     versionName = 'Tangled'
     versionNum = '0.0'
 
-    # please don't touch these without using the relevant locks, self.IRCLock
+    # /please/ don't touch these without using the relevant locks, self.IRCLock
     # and self.tangledLock
     # requests that need a response from IRC to resolve
     # requests that take an extra argument or otherwise are dicts

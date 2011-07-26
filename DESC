@@ -27,12 +27,13 @@ type.  See json.org for more information of the format and what it can
 contain.
 
 Another way to run a module is by talking to a python interface directly, by
-throwing around dicts rather than json strings.  There are two reasons for
-this interface to exist: it saves some overhead (no need for another python
-process), and I haven't figured out yet how to make one script talk on IRC as
-well as through stdin/stdout.  Currently the python interface doesn't do
-anything to stop a module from locking up the entire bot, so don't use it
-unless you're quite sure the module won't block.
+throwing around dicts (which are called "msgobj"s throughout the source)
+rather than json strings.  There are two reasons for this interface to exist:
+it saves some overhead (no need for another python process), and I haven't
+figured out yet how to make one script talk on IRC as well as through
+stdin/stdout.  Currently the python interface doesn't do anything to stop a
+module from locking up the entire bot, so don't use it unless you're quite
+sure the module won't block.
 
 For a rough idea of the future plans I have for Tangled you ought to check out
 the file tangled.org (formatted for emacs' org-mode) which has mostly

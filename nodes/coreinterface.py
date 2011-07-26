@@ -3,6 +3,14 @@
 # Copyright (C) 2011 Dominic van Berkel - dominic@baudvine.net
 # See LICENSE for details
 
+"""coreinterface.py
+
+The core-side half of the interface between core and node.  These classes -
+PythonNode and ExecutableNode - are instantiated to create the node objects
+that the core (tangled.py) talks to.  Here the Python nodes are imported and
+the executable ones are executed
+"""
+
 import json
 import logging
 import os

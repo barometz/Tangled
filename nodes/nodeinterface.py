@@ -4,8 +4,11 @@
 # See LICENSE for details
 
 class TangledInterface():
-    """An instance of this is created by Tangled to talk to the node"""
+    """The node-side half of the interface between the core and a PythonNode.
 
+    This is subclassed by an Interface class in the PythonNode and
+    instantiated by the core-side half of the interface in coreinterface.py.
+    """
     def __init__(self, router):
         """You'll want to override this to get your module started"""
         self.router = router
@@ -15,6 +18,11 @@ class TangledInterface():
         self.router.processObject(msgobj)
 
     def set_client(self, client):
+        """We're told who's boss on the node side.
+
+        client is an object that has at least a .message method, taking a
+        msgobj as its only argument.
+        """
         self.client = client
 
     def message(self, msgobj):
