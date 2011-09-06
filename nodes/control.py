@@ -15,6 +15,9 @@ execnode.send({'target': 'core',
                'type': 'addhooks',
                'hooks': ['node_loaded']})
 
+# This node depends on the irc node, so for clarity's sake we'll first wait
+# for that to have loaded.
+
 while True:
     msgobj = execnode.getmsg()
     if msgobj:
@@ -40,8 +43,10 @@ while True:
                     execnode.send({'target': 'irc',
                                    'type': 'addhook',
                                    'trigger': 'quit'})
+
             elif msgobj['type'] == 'node_loaded':
                 if msgobj['node'] == 'irc':
+                    # The IRC module has been loaded
                     # install !quit hook
                     execnode.send({'target': 'irc',
                                    'type': 'addhook',

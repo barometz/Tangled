@@ -7,9 +7,9 @@
 """irc.py
 
 This is where all the IRC magic happens.  A PythonNode rather than an
-ExecutableNode for reasons that are forgotten (need to figure that out,
-srsly), but it's not much of an issue as the blocking IRC bits are handled by
-Twisted
+ExecutableNode because there have been issues talking to both stdio and IRC.
+Not sure whether that's a real issue anymore. It's not much of an issue as the
+blocking IRC bits are handled by Twisted
 """
 
 # system imports

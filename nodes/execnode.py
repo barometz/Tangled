@@ -29,17 +29,21 @@ def log(level, msg):
          'level': level,
          'content': msg})
 
-def startup():
+def startup(*initreqs):
     """Start the interface with the core.  Called when the module is done
     loading and can receive stuff.
 
     Two things: disable "echo" on our stdin to prevent echoin everything we
     receive right back at the core.  Then we can tell the core we're loaded
     and ready.
+
+    initreqs is a list of information the node would like to get from the core
+    right now.
     """
     os.system("stty -echo")
     send({'target': 'core',
-          'type': 'loaded'})
+          'type': 'loaded',
+          'initreqs': initreqs})
 
 def getmsg():
     """Get the next line from the core.
