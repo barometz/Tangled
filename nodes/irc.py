@@ -151,18 +151,6 @@ class IRCThing(irc.IRCClient):
                      'nick': nick,
                      'channel': channel})
 
-#    def trigger_quit(self, nick, channel, msg):
-#        self.interface.send({'target': 'control.py',
-#                             'type': 'trigger',
-#                             'command': 'quit',
-#                             'nick': nick})
-                            
-    def trigger_nodes(self, nick, channel, msg):
-        self.interface.send({'target': 'core', 
-                             'type': 'nodes', 
-                             'nick': nick,
-                             'channel': channel})
-
     def trigger_whois(self, nick, channel, msg):
         if len(msg) != 2:
             self.msg(channel, 
@@ -191,6 +179,9 @@ class IRCThing(irc.IRCClient):
         self.interface.log(logging.WARNING, 
                            "Received unhandled message type '{type}' from node \
 '{source}'".format(**msgobj))
+
+    def tangled_privmsg(self, msgobj):
+        self.msg(msgobj['to'], msgobj['message'])
 
     def tangled_addhook(self, msgobj):
         if 'trigger' in msgobj:
