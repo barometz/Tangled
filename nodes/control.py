@@ -24,7 +24,7 @@ while True:
                            'type': 'addhooks',
                            'hooks': ['node_loaded']})
     elif msgobj['type'] == 'node_loaded' and msgobj['node'] == 'irc':
-                break
+        break
     elif msgobj['source'] == 'core' and msgobj['type'] == 'quit':
         execnode.send({'target': 'core',
                        'type': 'unloaded'})
@@ -54,12 +54,6 @@ while True:
             execnode.send({'target': 'core',
                            'type': 'unloaded'})
             break
-        elif msgobj['type'] == 'nodes':
-            if 'irc' in msgobj['content']:
-                # install !quit hook
-                execnode.send({'target': 'irc',
-                               'type': 'addhook',
-                               'trigger': 'quit'})
     elif msgobj['source'] == 'auth.py':
         if msgobj['type'] == 'haslevel':
             if msgobj['result'] == 'true':
