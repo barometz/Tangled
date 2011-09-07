@@ -69,9 +69,9 @@ class TangledNode():
         Here we also go through the initial requests of the node."""
         self.router.node_loaded(self.shortname)
         if 'initreqs' in msgobj:
-            for req in initreqs:
+            for req in msgobj['initreqs']:
                 if req == 'nodes':
-                    self.msg_nodes(self, {}) # yeah, this is ugly
+                    self.msg_nodes({}) # yeah, this is ugly
     
     def msg_unloaded(self, msgobj):
         self.router.node_unloaded(self.shortname)

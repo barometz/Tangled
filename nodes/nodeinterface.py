@@ -45,11 +45,12 @@ class TangledInterface():
         self.send({'type': 'unloaded',
                              'target': 'core'})
 
-    def loaded(self):
+    def loaded(self, initreqs=[]):
         """Node reports that it's finished initial loading.  Tell the core!"""
         self.send({
                 'target': 'core',
-                'type': 'loaded'
+                'type': 'loaded',
+                'initreqs': initreqs
                 })
 
 if __name__ == '__main__':

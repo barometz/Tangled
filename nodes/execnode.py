@@ -29,7 +29,7 @@ def log(level, msg):
          'level': level,
          'content': msg})
 
-def startup(*initreqs):
+def startup(initreqs=[]):
     """Start the interface with the core.  Called when the module is done
     loading and can receive stuff.
 
@@ -48,16 +48,14 @@ def startup(*initreqs):
 def getmsg():
     """Get the next line from the core.
 
-    If the line isn't empty and parses as json, a msgobj is returned.
-    Otherwise return False.
+    Blocks until a line has been received.  If the line isn't empty and parses
+    as json, a msgobj is returned.  Otherwise loop back and get another line.
     """
-    line = sys.stdin.readline()
-    if line.strip() == '':
-        msgobj = False
-    else:
-        try:
-            msgobj = json.loads(line)
-        except ValueError:
-            log('error', 'Not a json string: {}'.format(line))
-            msgobj = False
-    return msgobj
+    while True:
+        line = sys.stdin.readline()
+        if line.strip() != '':
+            try:
+                msgobj = json.loads(line)
+                return msgobj
+            except ValueError:
+                log('error', 'Not a json string: {}'.format(line))
