@@ -27,6 +27,7 @@ For some reason the TODO and DONE tags don't show up in Github's webviewer.  The
 **** arbitrary message matches
 **** privmsg
 **** message specific to channel?
+*** Why does triggerMessage put the trigger and the arguments in a list, rather than in separate items?
 *** DONE Configuration file
 **** Nickname
 **** Server

@@ -16,10 +16,11 @@ blocking IRC bits are handled by Twisted
 import json
 import threading
 import logging
+import time
 
 # twisted imports
 from twisted.words.protocols import irc
-from twisted.internet import reactor, protocol
+from twisted.internet import reactor, protocol, task
 
 # the interface to talk to the core
 from nodes import nodeinterface
@@ -48,10 +49,11 @@ class IRCThing(irc.IRCClient):
     # and self.tangledLock
     # requests that need a response from IRC to resolve
     # requests that take an extra argument or otherwise are dicts
-    pendingIRCRequests = {'realname': {},
-                          'nodes': []}
+    pendingIRCRequests = {'realname': {}} 
     # requests that need a response from the rest of the bot to resolve
     pendingTangledRequests = {'nodes': []}
+    # this one will usually not be bigger than one item
+    pendingPings = []
 
     triggerHooks = {}
 
@@ -66,6 +68,8 @@ class IRCThing(irc.IRCClient):
         irc.IRCClient.connectionMade(self)
         self.interface.loaded()
         self.interface.log(logging.INFO, 'Connected to IRCd')
+        self.pingloop = task.LoopingCall(self.pingserver)
+        self.pingloop.start(200)
 
     def connectionLost(self, reason):
         irc.IRCClient.connectionLost(self, reason)
@@ -91,6 +95,23 @@ class IRCThing(irc.IRCClient):
         self.password = self.config['password']
         self.triggerChar = self.config['triggerChar']
         self.encoding = self.config['encoding']
+
+    def pingserver(self):
+        """Send the server a PING"""
+        now = time.time()
+        # pingcheck will be canceled when PONG is received
+        self.pingcheck = reactor.callLater(180, self.pingfailed)
+        self.sendLine("PING {}".format(now))
+
+    def pingfailed(self, pingid):
+        """Haven't received a PONG reply from the server yet.
+        
+        For now this'll just kill the whole bot, reconnecting might be
+        slightly more elegant though?
+        """
+        self.interface.log(logging.CRITICAL, "Ping timeout! Shutting down.")
+        self.interface.send({'target': 'core',
+                             'type': 'quit'})
 
     ## Callbacks from irc.IRCClient
 
@@ -133,6 +154,15 @@ class IRCThing(irc.IRCClient):
                 for callback in self.pendingIRCRequests['realname'][params[1]]:
                     callback(params[-1])
                 del self.pendingIRCRequests['realname'][params[1]]
+
+    def irc_PONG(self, prefix, params):
+        """Received a PONG reply from the server"""
+        now = time.time()
+        sent = float(params[-1])
+        diff = now - sent
+        self.interface.log(logging.INFO, "Ping reply: {}".format(diff))
+        self.pingcheck.cancel()
+                           
     
     ## Own callbacks
 
