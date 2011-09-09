@@ -142,12 +142,16 @@ class TangledRouter():
         logging.info('New logging session at level {}'.format(loglevel))
 
     def quit(self):
-        """Called when reactor.stop is called"""
+        """Called when reactor.stop() is called"""
         nodelist = self.nodes.values()
         for node in nodelist:
             logging.info('Sending quit to ' + node.shortname)
             node.sendCoreMessage({'type': 'quit'})
         reactor.callLater(5, self.forcequit)
+        # This deferred makes sure that the reactor doesn't actually stop
+        # until all nodes have unloaded (see node_unloaded()) or five seconds
+        # have passed (see forcequit()).
+        # http://twistedmatrix.com/documents/11.0.0/api/twisted.internet.interfaces.IReactorCore.html#addSystemEventTrigger
         self.deferquit = defer.Deferred()
         return self.deferquit
 
