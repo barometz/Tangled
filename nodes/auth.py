@@ -22,6 +22,6 @@ while True:
                 execnode.send(msgobj)
         elif msgobj['source'] == 'core':
             if msgobj['type'] == 'quit':
-                execnode.send({'target': 'core',
-                               'type': 'unloaded'})
+                execnode.send(target='core',
+                              type='unloaded')
                 break

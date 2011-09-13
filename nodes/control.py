@@ -20,29 +20,22 @@ while True:
         if 'irc' in msgobj['content']:
             break
         else:
-            execnode.send({'target': 'core',
-                           'type': 'addhooks',
-                           'hooks': ['node_loaded']})
+            execnode.send(target='core',
+                          type='addhooks',
+                          hooks=['node_loaded'])
     elif msgobj['type'] == 'node_loaded' and msgobj['node'] == 'irc':
         break
     elif msgobj['source'] == 'core' and msgobj['type'] == 'quit':
-        execnode.send({'target': 'core',
-                       'type': 'unloaded'})
+        execnode.send(target='core',
+                      type='unloaded')
         sys.exit()
 
 # The IRC module has been loaded
 # install !quit and !nodes hooks
-execnode.send({'target': 'irc',
-               'type': 'addhook',
-               'trigger': 'quit'})
-
-execnode.send({'target': 'irc',
-               'type': 'addhook',
-               'trigger': 'nodes'})
-
-execnode.send({'target': 'irc',
-               'type': 'addhook',
-               'trigger': 'load'})
+for trigger in ['quit', 'nodes', 'load']:
+    execnode.send(target='irc',
+                  type='addhook',
+                  trigger=trigger)
 
 while True:
     msgobj = execnode.getmsg()
@@ -50,34 +43,34 @@ while True:
         if msgobj['type'] == 'trigger':
             if msgobj['content'][0] == 'nodes':
                 # hm. maybe wrap these next four statements in a function.
-                reqid = execnode.send({'target': 'core',
-                                       'type': 'nodes'})
+                reqid = execnode.send(target='core',
+                                      type='nodes')
                 pending[reqid] = {'target': 'irc',
                                   'type': 'privmsg',
                                   'to': msgobj['channel'],
                                   'message': msgobj['nick'] + ': {}'}
             elif msgobj['content'][0] == 'quit':
-                reqid = execnode.send({'target': 'auth.py',
-                                       'type': 'haslevel',
-                                       'nick': msgobj['nick'],
-                                       'level': 30})
+                reqid = execnode.send(target='auth.py',
+                                      type='haslevel',
+                                      nick=msgobj['nick'],
+                                      level=30)
                 pending[reqid] = {'target': 'core',
                                   'type': 'quit'}
             elif msgobj['content'][0] == 'load':
                 if len(msgobj['content']) == 2:
-                    execnode.send({'target': 'core',
-                                   'type': 'loadnode',
-                                   'node': msgobj['content'][1],
-                                   'pynode': False})
+                    execnode.send(target='core',
+                                   type='loadnode',
+                                   node=msgobj['content'][1],
+                                   pynode=False)
             elif msgobj['content'][0] == 'reload':
                 if len(msgobj['content']) == 2:
-                    execnode.send({'target': 'core',
-                                   'type': 'reloadnode',
-                                   'node': msgobj['content'][1]})
+                    execnode.send(target='core',
+                                  type='reloadnode',
+                                  node=msgobj['content'][1])
     elif msgobj['source'] == 'core':
         if msgobj['type'] == 'quit':
-            execnode.send({'target': 'core',
-                           'type': 'unloaded'})
+            execnode.send(target='core',
+                          type='unloaded')
             break
         if msgobj['type'] == 'nodes':
             nodes = ' '.join(msgobj['content'])
