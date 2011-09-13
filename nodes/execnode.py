@@ -15,10 +15,28 @@ import sys
 import json
 import os
 
+def uniqueid():
+    """Generator for unique request IDs, only for use within this module"""
+    n = 1
+    while True: 
+        yield n 
+        n += 1
 
-def send(msgobj):
-    """Send a json-serialized msgobj over stdout to the core"""
+rid = uniqueid()
+
+def send(msgobjindict=None, **msgobj):
+    """Send a json-serialized msgobj over stdout to the core
+
+    Takes either a dictionary or arbitrary keyword arguments. Attaches a
+    unique request id in the 'rid' field and returns that.
+    """
+    if msgobjindict is not None:
+        msgobj = msgobjindict
+    if not 'rid' in msgobj:
+        # don't change the rid when it's a response
+        msgobj['rid'] = rid.next()
     print(json.dumps(msgobj))
+    return msgobj['rid']
 
 def log(level, msg):
     """Log a message to the core.  

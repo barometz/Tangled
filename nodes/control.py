@@ -50,23 +50,17 @@ while True:
         if msgobj['type'] == 'trigger':
             if msgobj['content'][0] == 'nodes':
                 # hm. maybe wrap these next four statements in a function.
-                reqid = pendingcounter
-                pendingcounter += 1
-                execnode.send({'target': 'core',
-                               'type': 'nodes',
-                               'id': reqid})
+                reqid = execnode.send({'target': 'core',
+                                       'type': 'nodes'})
                 pending[reqid] = {'target': 'irc',
                                   'type': 'privmsg',
                                   'to': msgobj['channel'],
                                   'message': msgobj['nick'] + ': {}'}
             elif msgobj['content'][0] == 'quit':
-                reqid = pendingcounter
-                pendingcounter += 1
-                execnode.send({'target': 'auth.py',
-                               'type': 'haslevel',
-                               'nick': msgobj['nick'],
-                               'level': 30,
-                               'id': reqid})
+                reqid = execnode.send({'target': 'auth.py',
+                                       'type': 'haslevel',
+                                       'nick': msgobj['nick'],
+                                       'level': 30})
                 pending[reqid] = {'target': 'core',
                                   'type': 'quit'}
             elif msgobj['content'][0] == 'load':
@@ -87,14 +81,14 @@ while True:
             break
         if msgobj['type'] == 'nodes':
             nodes = ' '.join(msgobj['content'])
-            pending[msgobj['id']]['message'] = pending[msgobj['id']]['message'].format(nodes)
-            execnode.send(pending[msgobj['id']])
-            del pending[msgobj['id']]
+            pending[msgobj['rid']]['message'] = pending[msgobj['rid']]['message'].format(nodes)
+            execnode.send(pending[msgobj['rid']])
+            del pending[msgobj['rid']]
     elif msgobj['source'] == 'auth.py':
         if msgobj['type'] == 'haslevel':
             try:
                 if msgobj['result'] == 'true':
-                    execnode.send(pending[msgobj['id']])
-                del pending[msgobj['id']]
+                    execnode.send(pending[msgobj['rid']])
+                del pending[msgobj['rid']]
             except KeyError:
                 execnode.log(30, 'Haslevel response from auth.py with unknown pending id')
