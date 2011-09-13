@@ -51,6 +51,16 @@ class TangledNode():
 
     ## Callbacks for messages from the node
 
+    def msg_loadnode(self, msgobj):
+        """The node requests that another node be loaded.
+        
+        msgobj contents: 'node': filename (sans .py for pynodes)
+                         'pynode': boolean
+        """
+        self.logger.info("Requesting loading of {node}".format(**msgobj))
+        # TODO - some sort of callback when it fails or succeeds?
+        self.router.runnode(msgobj['node'], msgobj['pynode'])
+
     def msg_quit(self, msgobj):
         self.logger.info('Initiating quit sequence')
         reactor.stop()

@@ -40,6 +40,10 @@ execnode.send({'target': 'irc',
                'type': 'addhook',
                'trigger': 'nodes'})
 
+execnode.send({'target': 'irc',
+               'type': 'addhook',
+               'trigger': 'load'})
+
 while True:
     msgobj = execnode.getmsg()
     if msgobj['source'] == 'irc':
@@ -65,6 +69,17 @@ while True:
                                'id': reqid})
                 pending[reqid] = {'target': 'core',
                                   'type': 'quit'}
+            elif msgobj['content'][0] == 'load':
+                if len(msgobj['content']) == 2:
+                    execnode.send({'target': 'core',
+                                   'type': 'loadnode',
+                                   'node': msgobj['content'][1],
+                                   'pynode': False})
+            elif msgobj['content'][0] == 'reload':
+                if len(msgobj['content']) == 2:
+                    execnode.send({'target': 'core',
+                                   'type': 'reloadnode',
+                                   'node': msgobj['content'][1]})
     elif msgobj['source'] == 'core':
         if msgobj['type'] == 'quit':
             execnode.send({'target': 'core',

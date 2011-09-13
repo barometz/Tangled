@@ -69,8 +69,7 @@ class TangledRouter():
         logging.info('Loading initial nodes: {}'.format(newnodes))
         logging.info('Loading initial python nodes: {}'.format(newpynodes))
         for node in newnodes:
-            if node is not '':
-                self.runnode(node)
+            self.runnode(node)
         for node in newpynodes:
             self.runnode(node, True)
     
@@ -96,7 +95,9 @@ class TangledRouter():
             self.hooks[hook].append(node)
 
     def processhooks(self, hook, msgobj):
-        for node in self.hooks[hook]:
+        """Go through the hooks for "hook" and send the registered modules
+        msgobj."""
+        for node in self.hooks[hook]: 
             msgobj.update({'type': hook})
             node.sendCoreMessage(msgobj)
 
@@ -162,7 +163,7 @@ properly: " + nodes)
         self.deferquit.callback(None)
         
     ## Sorta-callbacks for the nodes
-    
+
     def node_loaded(self, node):
         """A node reports that it has finished loading.
 
