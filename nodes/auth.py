@@ -8,20 +8,20 @@ import execnode
 
 execnode.startup()
 
-while True:
-    msgobj = execnode.getmsg()
-    if msgobj:
-        if msgobj['type'] == 'haslevel':
-            if msgobj['nick'] == 'nazgjunk':
-                msgobj['target'] = msgobj['source']
-                msgobj['result'] = 'true'
-                execnode.send(msgobj)
-            else:
-                msgobj['target'] = msgobj['source']
-                msgobj['result'] = 'false'
-                execnode.send(msgobj)
-        elif msgobj['source'] == 'core':
-            if msgobj['type'] == 'quit':
-                execnode.send(target='core',
-                              type='unloaded')
-                break
+stdin = execnode.getinput()
+
+for msgobj in stdin:
+    if msgobj['type'] == 'haslevel':
+        if msgobj['nick'] == 'nazgjunk':
+            msgobj['target'] = msgobj['source']
+            msgobj['result'] = 'true'
+            execnode.send(msgobj)
+        else:
+            msgobj['target'] = msgobj['source']
+            msgobj['result'] = 'false'
+            execnode.send(msgobj)
+    elif msgobj['source'] == 'core':
+        if msgobj['type'] == 'quit':
+            execnode.send(target='core',
+                          type='unloaded')
+            break

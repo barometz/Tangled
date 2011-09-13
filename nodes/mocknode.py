@@ -7,15 +7,13 @@
 import sys
 import execnode
 
-pending = {}
-pendingcounter = 0
-
 execnode.startup(["nodes"])
+
+stdin = execnode.getinput()
 
 # This node depends on the irc node, so for clarity's sake we'll first wait
 # for that to have loaded.
-while True:
-    msgobj = execnode.getmsg()
+for msgobj in stdin:
     if msgobj['type'] == 'nodes':
         if 'irc' in msgobj['content']:
             break
@@ -40,8 +38,7 @@ execnode.send({'target': 'irc',
                'type': 'addhook',
                'trigger': 'test'})
 
-while True:
-    msgobj = execnode.getmsg()
+for msgobj in stdin:
     if msgobj['source'] == 'irc':
         if msgobj['type'] == 'trigger':
             if msgobj['content'][0] == 'test':

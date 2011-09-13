@@ -22,21 +22,21 @@ def uniqueid():
         yield n 
         n += 1
 
-rid = uniqueid()
+mid = uniqueid()
 
 def send(msgobjindict=None, **msgobj):
     """Send a json-serialized msgobj over stdout to the core
 
     Takes either a dictionary or arbitrary keyword arguments. Attaches a
-    unique request id in the 'rid' field and returns that.
+    unique (to the sending module) message id in the 'mid' field and returns that.
     """
     if msgobjindict is not None:
         msgobj = msgobjindict
-    if not 'rid' in msgobj:
-        # don't change the rid when it's a response
-        msgobj['rid'] = rid.next()
+    if not 'mid' in msgobj:
+        # don't change the mid when it's a response
+        msgobj['mid'] = mid.next()
     print(json.dumps(msgobj))
-    return msgobj['rid']
+    return msgobj['mid']
 
 def log(level, msg):
     """Log a message to the core.  
@@ -63,8 +63,8 @@ def startup(initreqs=[]):
           'type': 'loaded',
           'initreqs': initreqs})
 
-def getmsg():
-    """Get the next line from the core.
+def getinput():
+    """A generator that yields msgobjs as they come in
 
     Blocks until a line has been received.  If the line isn't empty and parses
     as json, a msgobj is returned.  Otherwise loop back and get another line.
@@ -74,6 +74,6 @@ def getmsg():
         if line.strip() != '':
             try:
                 msgobj = json.loads(line)
-                return msgobj
+                yield msgobj
             except ValueError:
                 log('error', 'Not a json string: {}'.format(line))

@@ -8,14 +8,14 @@ import sys
 import execnode
 
 pending = {}
-pendingcounter = 0
 
 execnode.startup(["nodes"])
 
+stdin = execnode.getinput()
+
 # This node depends on the irc node, so for clarity's sake we'll first wait
 # for that to have loaded.
-while True:
-    msgobj = execnode.getmsg()
+for msgobj in stdin:
     if msgobj['type'] == 'nodes':
         if 'irc' in msgobj['content']:
             break
@@ -37,8 +37,7 @@ for trigger in ['quit', 'nodes', 'load']:
                   type='addhook',
                   trigger=trigger)
 
-while True:
-    msgobj = execnode.getmsg()
+for msgobj in stdin:
     if msgobj['source'] == 'irc':
         if msgobj['type'] == 'trigger':
             if msgobj['content'][0] == 'nodes':
@@ -74,14 +73,14 @@ while True:
             break
         if msgobj['type'] == 'nodes':
             nodes = ' '.join(msgobj['content'])
-            pending[msgobj['rid']]['message'] = pending[msgobj['rid']]['message'].format(nodes)
-            execnode.send(pending[msgobj['rid']])
-            del pending[msgobj['rid']]
+            pending[msgobj['mid']]['message'] = pending[msgobj['mid']]['message'].format(nodes)
+            execnode.send(pending[msgobj['mid']])
+            del pending[msgobj['mid']]
     elif msgobj['source'] == 'auth.py':
         if msgobj['type'] == 'haslevel':
             try:
                 if msgobj['result'] == 'true':
-                    execnode.send(pending[msgobj['rid']])
-                del pending[msgobj['rid']]
+                    execnode.send(pending[msgobj['mid']])
+                del pending[msgobj['mid']]
             except KeyError:
                 execnode.log(30, 'Haslevel response from auth.py with unknown pending id')
