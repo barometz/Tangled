@@ -1,3 +1,7 @@
+Abandoned! For now, at least.  The concept is promising and has been done 
+successfully before, but a more practical solution has been found in Shirk, 
+which can be found in this same user's repository.
+
 Tangled is a modular IRC bot that talks to modules (or nodes, as they are
 called henceforth) by a python interface or through plain-text stdio pipes.
 It will be, anyway.  It is currently far from done and only barely functional,
